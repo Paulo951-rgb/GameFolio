@@ -1,0 +1,13 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+allowBuilds:
+  esbuild: set this to true or false
+
+onlyBuiltDependencies:
+  - esbuild
+
+# Skip the pre-run deps verification that re-triggers install and blocks tests
+# in this environment (esbuild build scripts are already approved above).
+verifyDepsBeforeRun: false

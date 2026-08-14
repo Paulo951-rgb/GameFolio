@@ -1,0 +1,20 @@
+{
+  "name": "@gamer-cv/services",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./ai": "./src/ai/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@gamer-cv/types": "workspace:*",
+    "@gamer-cv/core": "workspace:*"
+  }
+}
