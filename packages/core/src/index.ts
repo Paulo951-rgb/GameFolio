@@ -2,7 +2,7 @@
 // Electron app (which would only swap the infrastructure layer: API routes →
 // IPC, PostgreSQL cloud → SQLite local). See architecture doc section 1.
 
-export * from "./modules/index.js";
-export * from "./visibility/index.js";
-export * from "./templates/index.js";
-export * from "./generation/index.js";
+export * from "./modules/index";
+export * from "./visibility/index";
+export * from "./templates/index";
+export * from "./generation/index";

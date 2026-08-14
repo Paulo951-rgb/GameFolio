@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ModuleDefinition } from "./module.js";
+import type { FieldDescriptor, ModuleDefinition } from "./module";
 
 /**
  * Static game metadata + composition of generic modules.
@@ -40,6 +40,7 @@ export interface ResolvedGame {
   readonly game: GameDefinition;
   readonly modules: ModuleDefinition[];
   readonly compositeSchema: z.ZodObject<z.ZodRawShape>;
+  readonly fields: FieldDescriptor[];
 }
 
 /**

@@ -121,6 +121,7 @@ export function resolveGame(
     game,
     modules,
     compositeSchema: composeSchemas(modules),
+    fields: mergeFields(modules),
   };
 }
 

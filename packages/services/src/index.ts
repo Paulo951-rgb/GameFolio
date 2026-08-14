@@ -4,4 +4,4 @@
 //   export/  — headless PDF/image render (Phase 3)
 //   storage/ — local (IndexedDB) + cloud adapters (Phase 1 & v2)
 //   share/   — public link management (Phase 5)
-export * from "./ai/index.js";
+export * from "./ai/index";
