@@ -1,13 +1,17 @@
 import type { AIProvider } from "@gamer-cv/types";
+import { AnthropicProvider } from "./anthropic";
+import { MockProvider } from "./mock";
 
 /**
  * AI provider adapters (Phase 2). Each implements the `AIProvider` interface
  * from packages/types so the domain never couples to a vendor SDK. The active
  * provider is chosen by server config (env), swappable without touching core.
  *
- * Phase 0 ships only the registry/selection plumbing; concrete adapters
- * (Anthropic, OpenAI, Gemini, OpenRouter) are added in Phase 2.
+ * Adapters shipped:
+ *  - anthropic  — Anthropic Messages API (claude-3-5-sonnet). Server-only.
+ *  - mock       — deterministic, tokenless; for tests and dev without an API key.
  */
+
 export interface AIProviderRegistry {
   register(id: string, provider: AIProvider): this;
   get(id: string): AIProvider | undefined;
@@ -46,3 +50,53 @@ export class AIProviderRegistryImpl implements AIProviderRegistry {
     return this.providers.get(this.activeId)!;
   }
 }
+
+/**
+ * Build the active AIProvider from server environment variables.
+ *
+ *  - AI_PROVIDER: "anthropic" | "mock" (default: "mock" so dev works with no key)
+ *  - ANTHROPIC_API_KEY: required when AI_PROVIDER=anthropic
+ *  - ANTHROPIC_MODEL: optional model override
+ *
+ * The result is cached for the lifetime of the server process so repeated
+ * requests reuse the same provider instance (and SDK client).
+ */
+let cached: { providerId: string; provider: AIProvider } | null = null;
+
+export function createAIProvider(env: NodeJS.ProcessEnv = process.env): {
+  providerId: string;
+  provider: AIProvider;
+} {
+  const providerId = (env.AI_PROVIDER ?? "mock").toLowerCase();
+
+  if (cached && cached.providerId === providerId) {
+    return cached;
+  }
+
+  let provider: AIProvider;
+  switch (providerId) {
+    case "anthropic": {
+      const apiKey = env.ANTHROPIC_API_KEY;
+      if (!apiKey) {
+        throw new Error(
+          "AI_PROVIDER=anthropic requires ANTHROPIC_API_KEY to be set",
+        );
+      }
+      provider = new AnthropicProvider({
+        apiKey,
+        model: env.ANTHROPIC_MODEL,
+      });
+      break;
+    }
+    case "mock":
+      provider = new MockProvider();
+      break;
+    default:
+      throw new Error(`Unknown AI_PROVIDER "${providerId}"`);
+  }
+
+  cached = { providerId, provider };
+  return cached;
+}
+
+export { AnthropicProvider, MockProvider };
