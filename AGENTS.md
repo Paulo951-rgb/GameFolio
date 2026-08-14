@@ -244,3 +244,66 @@ Local-first remains the default; cloud is opt-in behind a session.
   resolve `./foo.js` for TS-source-only packages; use `./foo`. (Phase 0 used
   `.js` extensions assuming a bundler with ESM resolution — removed in Phase 1.)
 - Comments explain non-obvious invariants only; do not restate code.
+
+## What exists now (V2 — Moteur intelligent + vraie IA)
+
+V2 keeps the Phase 0–5 architecture intact (data-driven modules, visibility
+engine, anti-hallucination pipeline, WYSIWYG export, accounts/sharing). It
+deepens the two priorities from the V2 brief: a richer game DB + a real
+analysis-driven AI generation.
+
+- **Game DB** (`packages/data/src/games/`): 71 games (was 44). Each game ships
+  `aliases` (search synonyms), `platforms`, `developer`, `releaseYear`,
+  `genres`, plus existing `ranks`/`roles`/`characters`/`modes`. Aliases are
+  the dedup-friendly way to expose a game under several names (lol→League of
+  Legends, mc→Minecraft) — no duplicate game rows. Games added across FPS,
+  battle-royale, sandbox/survival, MOBA, racing, RPG, Nintendo/PlayStation/Xbox,
+  mobile, and legacy consoles.
+- **Modules** (`packages/data/src/modules/`): 27 composable modules (was 8).
+  New: `survival`, `building`, `redstone`, `modding`, `serverAdmin`,
+  `contentCreator`, `completion`, `achievement`, `moba`, `mmo`, `guild`,
+  `cardgame`, `strategy`, `sports`, `fighting`, `speedrun`, `creative`,
+  `weaponbased`, `rolebased`, `characterbased`. A game composes several; no
+  per-game UI code. Competitive games (Valorant, CS2, LoL, Apex, R6) get the
+  full competitive+characterbased+weaponbased stack; Minecraft composes
+  sandbox+survival+building+redstone+creative — no forced ranked fields.
+- **Search** (`packages/data/src/search.ts`): `searchGames(q)` with
+  exact→starts-with→includes→genre→platform→fuzzy (Levenshtein ≤2) over name
+  + aliases. Server route `GET /api/search?q=` is the thin wrapper; never load
+  the full catalogue client-side (§28).
+- **AI generation V2** (`packages/core/src/generation/index.ts`):
+  - `enrichForGeneration(profile)` attaches each game's `__context` (name,
+    genres, modules, ranks/roles/characters/modes) and surfaces per-game
+    `freeText` at top level — so the model interprets field values *per game*
+    (Diamant ≠ Champion ≠ 100% completion) (§20, §11).
+  - `buildSystemPrompt(mode, personality)` enforces: ANALYZE the profile,
+    deduce trends, then write — never reformat. Modes: standard/rapide/
+    détaillé/compétitif/portfolio. Personalities: professionnel/gaming/
+    compétitif/sobre/dynamique/très détaillé/court/naturel (§18, §19).
+  - `verifyFacts` now receives a `gameMetaBlob` built from
+    `enrichForGeneration` (game names, ranks, agents, etc.) so legitimate
+    proper nouns from the catalogue don't false-positive (§16).
+- **GeneratedText V2** (`packages/types/src/theme.ts`): structured output
+  `profileSummary / gamingIdentity / strengths[] / experience / games[]`
+  (gameId/title/description/highlights). `.refine()` rejects empty or
+  foreign-shaped JSON (§17). Raw user data stays separate; regeneration never
+  mutates it (§21, §22).
+- **Providers**: `MockProvider` (offline, deterministic, analysis-flavored
+  output — uses lowercase so verifyFacts doesn't flag French capitalization)
+  and `AnthropicProvider` (real, V2 prompt, 2048 tokens). `createAIProvider()`
+  picks by `AI_PROVIDER`. **Provider status is surfaced honestly**:
+  `GET /api/ai/status` → `{providerId, real, configured}`, and the UI shows an
+  explicit "Mode hors-ligne — Mock" banner with the env to set. No fake AI in
+  prod (§30).
+- **UI**: `AIGeneratePanel` has Mode + Tonalité selectors, the provider-status
+  banner, regenerate-with-instruction. A shared `GeneratedSections` component
+  renders the V2 output identically in all 4 templates (WYSIWYG preserved).
+- **NaN bug fix (§26)**: empty `<input type=number>` registered via RHF
+  `valueAsNumber` produced `NaN`, which leaked into the store/IndexedDB/AI
+  prompt and rendered as "NaN". Fixed at 3 layers: `formatValue` coerces NaN→"—"
+  (presentation), core `isEmpty` treats NaN as empty (AI pipeline safety — NaN
+  never reaches the model), `DynamicGameForm` watch strips NaN (source/store).
+
+V2 tests: 114 green (types 6, core 45 incl. enrichForGeneration/systemPrompt/
+verifyFacts/serializeProfile-NaN, data 16 incl. search fuzzy/aliases, services
+5, web 42 incl. NaN formatValue). typecheck + build green.

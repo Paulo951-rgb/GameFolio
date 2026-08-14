@@ -4,13 +4,17 @@ import { defineGame } from "@gamer-cv/core";
 export const ApexLegends = defineGame({
   id: "apex-legends",
   name: "Apex Legends",
-  publisher: "Respawn",
-  genres: ["FPS", "battle royale"],
+  publisher: "EA",
+  developer: "Respawn Entertainment",
+  genres: ["FPS", "battle royale", "compétitif"],
+  aliases: ["apex", "apex legend", "apexlegends"],
+  platforms: ["PC", "Console", "Mobile"],
+  releaseYear: 2019,
   icon: "/icons/apex.svg",
-  modules: ["battleroyale", "competitive"],
+  modules: ["battleroyale", "competitive", "characterbased"],
   gameData: {
     ranks: ["Bronze", "Argent", "Or", "Platine", "Diamant", "Maître", "Prédateur"],
     roles: ["Reconnaissance", "Assaut", "Support", "Contrôle"],
-    characters: ["Wraith", "Pathfinder", "Octane", "Bloodhound", "Loba", "Horizon"],
+    characters: ["Wraith", "Pathfinder", "Octane", "Bloodhound", "Loba", "Horizon", "Valkyrie", "Ash", "Mad Maggie", "Conduit", "Alter", "Catalyst", "Seer", "Bangalore", "Caustic", "Wattson", "Rampart", "Newcastle", "Gibraltar", "Caustic"],
   },
 });

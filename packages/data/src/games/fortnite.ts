@@ -1,14 +1,18 @@
 import { defineGame } from "@gamer-cv/core";
 
-/** Fortnite — battle royale (no competitive ranked ladder in this module set). */
+/** Fortnite — battle royale + creative. Single game spans PC/console/mobile. */
 export const Fortnite = defineGame({
   id: "fortnite",
   name: "Fortnite",
   publisher: "Epic Games",
-  genres: ["battle royale", "survival"],
+  developer: "Epic Games",
+  genres: ["battle royale", "survival", "créatif"],
+  aliases: ["fn", "fortnite battle royale", "fortnite creatif"],
+  platforms: ["PC", "Console", "Mobile"],
+  releaseYear: 2017,
   icon: "/icons/fortnite.svg",
-  modules: ["battleroyale"],
+  modules: ["battleroyale", "creative", "contentcreator"],
   gameData: {
-    ranks: [],
+    ranks: ["Bronze", "Argent", "Or", "Platine", "Diamant", "Élite", "Champion", "Unreal"],
   },
 });

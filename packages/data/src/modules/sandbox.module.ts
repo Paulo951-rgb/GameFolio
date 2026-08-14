@@ -11,7 +11,7 @@ export const SandboxModule = defineModule({
     hours: z.number().optional(),
     gameModes: z.array(z.string()).optional(),
     building: z.enum(["débutant", "intermédiaire", "avancé", "expert"]).optional(),
-    pvp: z.boolean().optional(),
+    pvp: z.string().optional(),
     projects: z.array(z.string()).optional(),
   }),
   fields: [

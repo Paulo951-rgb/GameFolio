@@ -36,7 +36,7 @@ export class AnthropicProvider implements AIProvider {
     }
     this.client = opts.client ?? new Anthropic({ apiKey: opts.apiKey });
     this.model = opts.model ?? "claude-3-5-sonnet-latest";
-    this.maxTokens = opts.maxTokens ?? 1024;
+    this.maxTokens = opts.maxTokens ?? 2048;
   }
 
   async generate(input: GenerationInput): Promise<GenerationOutput> {
@@ -60,19 +60,32 @@ export class AnthropicProvider implements AIProvider {
 
 /**
  * Build the user-facing prompt from the serialized profile + optional guided
- * regeneration instruction. The data is already visibility-filtered and
- * empty-stripped upstream (runGeneration), so we just stringify it.
+ * regeneration instruction. The data is already visibility-filtered,
+ * empty-stripped AND context-enriched upstream (runGeneration): each game entry
+ * carries a `__context` with the game's name/genres/modules/metadata so the
+ * model can interpret field values per game (§20).
  */
 export function buildUserMessage(input: GenerationInput): string {
   const data = JSON.stringify(input.profileData, null, 2);
   const lines = [
-    "Voici les données du profil du joueur (JSON) :",
+    "Voici les données du profil du joueur (JSON). Chaque jeu contient un objet `__context` décrivant le jeu (nom, genres, modules, métadonnées : rangs/rôles/personnages/modes disponibles) — utilise-le pour interpréter les valeurs (un rang ou un pourcentage n'a pas la même signification selon le jeu). Le champ `freeText` contient les informations libres saisies par le joueur : analyse-les au même niveau que les statistiques structurées.",
     "```json",
     data,
     "```",
     "",
-    'Génère un texte de CV structuré au format JSON avec les clés "summary" (string), "strengths" (string[]) et "perGame" (Record<gameId, string>).',
-    "Ne mentionne QUE les informations présentes dans les données ci-dessus.",
+    "Analyse ce profil, comprends les expériences du joueur, détecte ses points forts, croise les informations, puis rédige un vrai CV gamer. Réponds UNIQUEMENT avec un objet JSON de cette forme :",
+    '{',
+    '  "profileSummary": "présentation personnalisée du joueur",',
+    '  "gamingIdentity": "type de joueur détecté à partir des données",',
+    '  "strengths": ["point fort déduit des données", ...],',
+    '  "experience": "résumé global de l\'expérience",',
+    '  "specializations": ["rôles, mécaniques, styles de jeu", ...],',
+    '  "performance": "rangs, records, progression (si pertinent)",',
+    '  "games": [ { "gameId": "...", "title": "...", "description": "...", "highlights": ["..."] } ],',
+    '  "summary": "résumé court (rétrocompatible)",',
+    '  "perGame": { "gameId": "description courte" }',
+    '}',
+    "Tu PEUX déduire des TENDANCES GÉNÉRALES. Tu NE PEUX PAS inventer une statistique, un rang, un nombre d'heures, une compétition, une récompense ou une compétence précise absente des données. Ne mentionne QUE les informations présentes.",
   ];
   if (input.instruction) {
     lines.push("", `Instruction supplémentaire : ${input.instruction}`);

@@ -9,6 +9,7 @@ import {
   formatLabel,
   formatValue,
 } from "./template-utils";
+import { GeneratedSections } from "./GeneratedSections";
 
 /**
  * Gaming template — dark, bold, neon-accented. Aimed at competitive/streamer
@@ -77,19 +78,24 @@ export function GamingTemplate({
         </section>
       )}
 
-      {generated?.summary && (
-        <section className={s.section}>
-          <h2 className={`mb-2 ${s.text} font-bold uppercase tracking-widest`} style={{ color: c.accent }}>
-            ▸ Résumé
-          </h2>
-          <p className={`${s.text} leading-relaxed opacity-90`}>{generated.summary}</p>
-        </section>
+      {generated && (
+        <GeneratedSections
+          generated={generated}
+          t={{
+            primary: c.accent,
+            text: c.text,
+            headingClass: `mb-2 ${s.text} font-bold uppercase tracking-widest`,
+            bodyClass: `${s.text} leading-relaxed opacity-90`,
+            sectionClass: s.section,
+            headingPrefix: "▸ ",
+          }}
+        />
       )}
 
       {games.length > 0 && (
         <section>
           <h2 className={`mb-3 ${s.text} font-bold uppercase tracking-widest`} style={{ color: c.accent }}>
-            ▸ Jeux
+            ▸ Détail par jeu
           </h2>
           <div className="space-y-3">
             {games.map((entry, i) => {
@@ -116,9 +122,6 @@ export function GamingTemplate({
                     </dl>
                   )}
                   {entry.freeText && <p className="mt-2 text-sm italic opacity-70">{entry.freeText}</p>}
-                  {generated?.perGame?.[entry.gameId] && (
-                    <p className="mt-2 text-sm leading-relaxed opacity-90">{generated.perGame[entry.gameId]}</p>
-                  )}
                 </article>
               );
             })}

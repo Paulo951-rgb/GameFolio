@@ -261,6 +261,17 @@ describe("generation pipeline", () => {
     });
   });
 
+  it("serializeProfile drops NaN (empty number inputs never reach the AI)", () => {
+    const out = serializeProfile({
+      gamerTag: "Nova",
+      games: [{ gameId: "g", moduleData: { rank: "Or", kdRatio: NaN, hours: NaN } }],
+    });
+    expect(out).toEqual({
+      gamerTag: "Nova",
+      games: [{ gameId: "g", moduleData: { rank: "Or" } }],
+    });
+  });
+
   it("verifyFacts flags numbers absent from the input", () => {
     const gen = {
       summary: "Joueur avec 250 heures et rang Immortel.",

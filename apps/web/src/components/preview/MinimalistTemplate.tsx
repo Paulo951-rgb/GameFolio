@@ -9,6 +9,7 @@ import {
   formatLabel,
   formatValue,
 } from "./template-utils";
+import { GeneratedSections } from "./GeneratedSections";
 
 /**
  * Minimalist template — presentation-only. Receives the normalized, already
@@ -79,19 +80,21 @@ export function MinimalistTemplate({
         </section>
       )}
 
-      {generated?.summary && (
-        <section className={s.section}>
-          <h2 className={`mb-2 ${s.text} font-semibold uppercase tracking-wider`} style={{ color: c.primary }}>
-            Résumé
-          </h2>
-          <p className={`${s.text} leading-relaxed opacity-90`}>{generated.summary}</p>
-        </section>
-      )}
+      <GeneratedSections
+        generated={generated}
+        t={{
+          primary: c.primary,
+          text: c.text,
+          headingClass: `mb-2 ${s.text} font-semibold uppercase tracking-wider`,
+          bodyClass: `${s.text} leading-relaxed opacity-90`,
+          sectionClass: s.section,
+        }}
+      />
 
       {games.length > 0 && (
         <section>
           <h2 className={`mb-3 ${s.text} font-semibold uppercase tracking-wider`} style={{ color: c.primary }}>
-            Jeux
+            Détail par jeu
           </h2>
           <div className="space-y-4">
             {games.map((entry, i) => {
@@ -121,11 +124,6 @@ export function MinimalistTemplate({
                   )}
                   {entry.freeText && (
                     <p className="mt-3 text-sm italic opacity-75">{entry.freeText}</p>
-                  )}
-                  {generated?.perGame?.[entry.gameId] && (
-                    <p className={`mt-2 ${s.text} leading-relaxed opacity-90`}>
-                      {generated.perGame[entry.gameId]}
-                    </p>
                   )}
                 </article>
               );

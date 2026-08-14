@@ -72,7 +72,7 @@ describe("profileToCreateData / profileToUpdateData", () => {
       templateId: "minimalist",
       themeConfig,
       games,
-      generatedText: { summary: "ok", strengths: ["aim"], perGame: { valorant: "x" } },
+      generatedText: { summary: "ok", strengths: ["aim"], specializations: [], games: [], perGame: { valorant: "x" } },
     });
     expect((create.generatedText as { summary: string }).summary).toBe("ok");
   });

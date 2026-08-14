@@ -10,11 +10,18 @@ import { Fortnite } from "./fortnite";
 import { CallOfDutyWarzone } from "./warzone";
 import { RocketLeague } from "./rocket-league";
 import { ForzaHorizon5 } from "./forza-horizon-5";
+import { ForzaMotorsport } from "./forza-motorsport";
 import { GranTurismo7 } from "./gran-turismo-7";
 import { MarioKart8 } from "./mario-kart-8";
 import { Trackmania } from "./trackmania";
+import { F1 } from "./f1";
+import { NeedForSpeed } from "./need-for-speed";
+import { AssettoCorsa } from "./assetto-corsa";
 import { TheWitcher3 } from "./the-witcher-3";
 import { EldenRing } from "./elden-ring";
+import { DarkSouls } from "./dark-souls";
+import { Skyrim } from "./skyrim";
+import { Fallout } from "./fallout";
 import { HollowKnight } from "./hollow-knight";
 import { ZeldaTearsOfTheKingdom } from "./zelda-totk";
 import { BaldursGate3 } from "./baldurs-gate-3";
@@ -30,6 +37,7 @@ import { Arknights } from "./arknights";
 import { WorldOfWarcraft } from "./world-of-warcraft";
 import { FinalFantasyXIV } from "./final-fantasy-xiv";
 import { Dota2 } from "./dota-2";
+import { Smite } from "./smite";
 import { Overwatch2 } from "./overwatch-2";
 import { RainbowSixSiege } from "./rainbow-six-siege";
 import { StreetFighter6 } from "./street-fighter-6";
@@ -39,9 +47,30 @@ import { StardewValley } from "./stardew-valley";
 import { MonsterHunterWorld } from "./monster-hunter-world";
 import { Destiny2 } from "./destiny-2";
 import { PUBG } from "./pubg";
+import { PUBGMobile } from "./pubg-mobile";
 import { LeagueOfLegendsWildRift } from "./wild-rift";
 import { GeometryDash } from "./geometry-dash";
 import { Roblox } from "./roblox";
+import { CallOfDuty } from "./call-of-duty";
+import { CallOfDutyMobile } from "./call-of-duty-mobile";
+import { CounterStrikeGO } from "./counter-strike-go";
+import { Battlefield1, Battlefield4, BattlefieldV, Battlefield2042 } from "./battlefield-series";
+import { EscapeFromTarkov } from "./escape-from-tarkov";
+import { FallGuys } from "./fall-guys";
+import { ARKSurvivalEvolved } from "./ark-survival-evolved";
+import { Valheim } from "./valheim";
+import { SevenDaysToDie } from "./seven-days-to-die";
+import { ProjectZomboid } from "./project-zomboid";
+import { GodOfWar } from "./god-of-war";
+import { MarvelsSpiderMan } from "./marvels-spider-man";
+import { TheLastOfUs } from "./the-last-of-us";
+import { GhostOfTsushima } from "./ghost-of-tsushima";
+import { HorizonZeroDawn } from "./horizon-zero-dawn";
+import { Uncharted } from "./uncharted";
+import { Halo } from "./halo";
+import { SeaOfThieves } from "./sea-of-thieves";
+import { Gears } from "./gears-of-war";
+import { searchGames as searchGamesImpl } from "../search";
 import { moduleRegistry } from "../modules/index";
 import { resolveGame } from "@gamer-cv/core";
 
@@ -56,52 +85,84 @@ import { resolveGame } from "@gamer-cv/core";
  * startup rather than at user runtime.
  */
 export const games: GameDefinition[] = [
-  // FPS / MOBA / tactical competitive
+  // FPS / tactical competitive
   Valorant,
+  CounterStrike2,
+  CounterStrikeGO,
+  CallOfDuty,
+  CallOfDutyMobile,
+  EscapeFromTarkov,
+  Battlefield1,
+  Battlefield4,
+  BattlefieldV,
+  Battlefield2042,
+  RainbowSixSiege,
+  Overwatch2,
+  Halo,
+  Gears,
+  // MOBA
   LeagueOfLegends,
   Dota2,
-  CounterStrike2,
-  Overwatch2,
-  RainbowSixSiege,
-  RocketLeague,
-  StreetFighter6,
-  FIFA,
   LeagueOfLegendsWildRift,
+  Smite,
   // battle royale
   ApexLegends,
   Fortnite,
   CallOfDutyWarzone,
   PUBG,
+  PUBGMobile,
+  FallGuys,
   // racing
+  RocketLeague,
   ForzaHorizon5,
+  ForzaMotorsport,
   GranTurismo7,
   MarioKart8,
   Trackmania,
-  // sandbox / survival
+  F1,
+  NeedForSpeed,
+  AssettoCorsa,
+  // sandbox / survival / creative
   Minecraft,
   Terraria,
   Rust,
   AmongUs,
   Roblox,
-  // single-player / story
+  ARKSurvivalEvolved,
+  Valheim,
+  SevenDaysToDie,
+  ProjectZomboid,
+  SeaOfThieves,
+  // single-player / story RPG
   Hades,
   TheWitcher3,
   EldenRing,
+  DarkSouls,
+  Skyrim,
+  Fallout,
   HollowKnight,
   ZeldaTearsOfTheKingdom,
   BaldursGate3,
   Cyberpunk2077,
   StardewValley,
   MonsterHunterWorld,
+  GodOfWar,
+  MarvelsSpiderMan,
+  TheLastOfUs,
+  GhostOfTsushima,
+  HorizonZeroDawn,
+  Uncharted,
   GeometryDash,
-  // progression + clan (mobile / MMO)
+  // fighting / sports / strategy
+  StreetFighter6,
+  FIFA,
+  // progression + clan (mobile / MMO / gacha)
   ClashOfClans,
   ClashRoyale,
   BrawlStars,
   WorldOfWarcraft,
   FinalFantasyXIV,
   Destiny2,
-  // gacha
   GenshinImpact,
   HonkaiStarRail,
   FateGrandOrder,
@@ -126,16 +187,9 @@ export const gameRegistry = buildGameRegistry();
 
 /**
  * Autocomplete search over the catalogue (for the GameSearchCombobox).
- * Matches on name or genre; case-insensitive; simple for the MVP.
+ * Multi-strategy: exact → starts-with → includes → genre → platform → fuzzy
+ * (simple typo tolerance). See ./search.ts for ranking detail.
  */
 export function searchGames(query: string, limit = 10): GameDefinition[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return games.slice(0, limit);
-  return games
-    .filter(
-      (g) =>
-        g.name.toLowerCase().includes(q) ||
-        g.genres.some((genre) => genre.toLowerCase().includes(q)),
-    )
-    .slice(0, limit);
+  return searchGamesImpl(games, query, limit);
 }

@@ -9,6 +9,7 @@ import {
   formatLabel,
   formatValue,
 } from "./template-utils";
+import { GeneratedSections } from "./GeneratedSections";
 
 /**
  * Néon template — cyberpunk, glowing text/edges on near-black. Bold and high
@@ -78,19 +79,25 @@ export function NeonTemplate({
         </section>
       )}
 
-      {generated?.summary && (
-        <section className={s.section}>
-          <h2 className={`mb-2 ${s.text} font-bold uppercase tracking-[0.2em]`} style={{ color: c.accent, textShadow: `0 0 6px ${c.accent}88` }}>
-            // Résumé
-          </h2>
-          <p className={`${s.text} leading-relaxed opacity-90`}>{generated.summary}</p>
-        </section>
+      {generated && (
+        <GeneratedSections
+          generated={generated}
+          t={{
+            primary: c.accent,
+            text: c.text,
+            headingClass: `mb-2 ${s.text} font-bold uppercase tracking-[0.2em]`,
+            bodyClass: `${s.text} leading-relaxed opacity-90`,
+            sectionClass: s.section,
+            headingPrefix: "// ",
+            headingStyle: { textShadow: `0 0 6px ${c.accent}88` },
+          }}
+        />
       )}
 
       {games.length > 0 && (
         <section>
           <h2 className={`mb-3 ${s.text} font-bold uppercase tracking-[0.2em]`} style={{ color: c.accent, textShadow: `0 0 6px ${c.accent}88` }}>
-            // Jeux
+            // Détail par jeu
           </h2>
           <div className="space-y-3">
             {games.map((entry, i) => {
@@ -117,9 +124,6 @@ export function NeonTemplate({
                     </dl>
                   )}
                   {entry.freeText && <p className="mt-2 text-sm italic opacity-70">{entry.freeText}</p>}
-                  {generated?.perGame?.[entry.gameId] && (
-                    <p className="mt-2 text-sm leading-relaxed opacity-90">{generated.perGame[entry.gameId]}</p>
-                  )}
                 </article>
               );
             })}

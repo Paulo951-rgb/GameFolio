@@ -54,5 +54,7 @@ export function formatLabel(key: string): string {
 export function formatValue(val: unknown): string {
   if (Array.isArray(val)) return val.join(", ");
   if (val == null || val === "") return "—";
+  // Empty number inputs register as NaN (RHF valueAsNumber); never show "NaN".
+  if (typeof val === "number" && Number.isNaN(val)) return "—";
   return String(val);
 }

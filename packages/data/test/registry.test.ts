@@ -27,7 +27,7 @@ describe("data package — games & modules", () => {
   });
 
   it("multi-module games compose shared fields (hours) without collision", () => {
-    // Genshin = gacha + singleplayer (both declare hours + completionPercent).
+    // Genshin = gacha + completion (both declare hours).
     const genshin = gameRegistry.get("genshin-impact");
     expect(genshin).toBeDefined();
     const resolved = resolveGame(genshin!, moduleRegistry);
@@ -85,11 +85,33 @@ describe("data package — games & modules", () => {
 
   it("searchGames matches by name and genre", () => {
     expect(searchGames("valo").map((g) => g.id)).toContain("valorant");
-    expect(searchGames("FPS").map((g) => g.id)).toContain("valorant");
+    // genre match — use a large limit since the catalogue now has many FPS games
+    expect(searchGames("FPS", 50).map((g) => g.id)).toContain("valorant");
   });
 
   it("searchGames returns up to limit games for an empty query", () => {
     expect(searchGames("").length).toBeLessThanOrEqual(10);
+  });
+
+  it("searchGames matches by alias (lol → league-of-legends)", () => {
+    expect(searchGames("lol").map((g) => g.id)).toContain("league-of-legends");
+    expect(searchGames("mc").map((g) => g.id)).toContain("minecraft");
+    expect(searchGames("rocket").map((g) => g.id)).toContain("rocket-league");
+  });
+
+  it("searchGames tolerates simple typos (minecaft → minecraft)", () => {
+    expect(searchGames("minecaft").map((g) => g.id)).toContain("minecraft");
+  });
+
+  it("searchGames ranks exact matches above partial matches", () => {
+    const ids = searchGames("valorant").map((g) => g.id);
+    expect(ids[0]).toBe("valorant");
+  });
+
+  it("searchGames matches by platform (mobile)", () => {
+    const ids = searchGames("mobile", 50).map((g) => g.id);
+    expect(ids).toContain("clash-of-clans");
+    expect(ids).toContain("call-of-duty-mobile");
   });
 });
 

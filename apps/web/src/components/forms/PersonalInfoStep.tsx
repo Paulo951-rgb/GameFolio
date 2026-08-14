@@ -25,7 +25,7 @@ export function PersonalInfoStep() {
   const setFieldVisibility = useEditorStore((s) => s.setFieldVisibility);
   const info = profile.personalInfo;
 
-  function setField(key: keyof typeof FIELDS, value: string | number) {
+  function setField(key: keyof typeof FIELDS, value: string | number | undefined) {
     setPersonalInfo({ [key]: value } as never);
   }
 
@@ -74,7 +74,7 @@ export function PersonalInfoStep() {
             type="number"
             value={info.age ?? ""}
             onChange={(e) =>
-              setField("age", e.target.value === "" ? 0 : Number(e.target.value))
+              setField("age", e.target.value === "" ? undefined : Number(e.target.value))
             }
             className={inputClass}
           />

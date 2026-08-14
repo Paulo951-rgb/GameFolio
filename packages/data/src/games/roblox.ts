@@ -4,10 +4,15 @@ export const Roblox = defineGame({
   id: "roblox",
   name: "Roblox",
   publisher: "Roblox Corporation",
-  genres: ["sandbox", "plateforme"],
+  developer: "Roblox Corporation",
+  genres: ["sandbox", "créatif", "plateforme"],
+  aliases: ["roblox", "roblocks", "roblex"],
+  platforms: ["PC", "Mobile", "Console"],
+  releaseYear: 2006,
   icon: "/icons/roblox.svg",
-  modules: ["sandbox"],
+  modules: ["creative", "contentcreator", "serveradmin"],
   gameData: {
-    gameModes: ["Adopt Me", "Brookhaven", "Tower of Hell", "Arsenal", "Jailbreak"],
+    gameModes: ["Obby", "Tycoon", "RP", "Simulator", "FPS", "Horror", "PvP"],
+    buildTools: ["Roblox Studio", "Luau"],
   },
 });
