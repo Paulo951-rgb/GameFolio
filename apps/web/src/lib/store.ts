@@ -11,6 +11,7 @@ import type {
   FieldVisibility,
   GeneratedText,
 } from "@gamer-cv/types";
+import { normalizeGeneratedText } from "@/lib/normalize";
 
 const STORAGE_KEY = "gamer-cv:current-profile";
 /** Separate key for the cloud DB id (kept apart from the profile blob so the
@@ -221,6 +222,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   loadCloudProfile: (profile) => {
     // A profile loaded from the cloud carries its DB id as profile.id — record
     // it so subsequent saves PATCH the same row instead of creating duplicates.
+    // The generatedText JSON column is cast `as GeneratedText` by the mapper
+    // with no validation; an older DB row can carry a partial/legacy shape whose
+    // array fields are undefined at runtime → normalize before it reaches the UI.
+    if (profile.generatedText !== undefined) {
+      profile.generatedText = normalizeGeneratedText(profile.generatedText);
+    }
     set({
       profile,
       currentStep: 0,
@@ -246,6 +253,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const saved = (await idbGet(STORAGE_KEY)) as GamerProfile | undefined;
     const cloudId = (await idbGet(CLOUD_ID_KEY)) as string | undefined;
     if (saved) {
+      // A profile restored from IndexedDB may have been persisted by an older
+      // app version or carry a partial/legacy generatedText whose array fields
+      // are missing (undefined at runtime despite the TS type). Re-validate it
+      // through the schema so the UI never crashes on generated.specializations
+      // .length / generated.games.map etc. (see normalizeGeneratedText).
+      if (saved.generatedText !== undefined) {
+        saved.generatedText = normalizeGeneratedText(saved.generatedText);
+      }
       set({ profile: saved, cloudProfileId: cloudId ?? null, hydrated: true });
     } else {
       set({ hydrated: true });
@@ -253,7 +268,15 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
 
   setGeneratedText: (text) => {
-    const profile = { ...get().profile, generatedText: text };
+    // Defense-in-depth: the API route already parses the AI output through
+    // GeneratedTextSchema, but inline edits (editText/editGame spreads) and any
+    // future caller could introduce a partial shape. Normalize so the runtime
+    // always matches the GeneratedText contract.
+    const normalized = normalizeGeneratedText(text);
+    const profile = {
+      ...get().profile,
+      generatedText: normalized as GeneratedText | undefined,
+    };
     set({ profile });
     scheduleSave(profile);
   },

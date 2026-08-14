@@ -35,7 +35,7 @@ Monorepo (pnpm workspaces), pure-TS domain packages only (no React/Next yet):
 
 ```bash
 pnpm install          # corepack manages pnpm (11.x). COREPACK_ENABLE_DOWNLOAD_PROMPT=0 in CI.
-pnpm -r test         # vitest — 129 tests (45 core + 18 data + 5 services + 6 types + 55 web), all green
+pnpm -r test         # vitest — 139 tests (45 core + 18 data + 5 services + 6 types + 65 web), all green
 pnpm -r typecheck    # tsc --noEmit across packages, all green
 pnpm -r build        # tsc --noEmit (packages) + next build (apps/web)
 # Run the export route live:
@@ -233,6 +233,27 @@ domain packages — no per-game UI code anywhere.
   `resolveFieldLabel`. CV detail is French + noise-free across Minimalist/Gaming/
   Classique/Néon (live-verified: Valorant shows only "Heures approximatives: 800").
   `formatLabel` kept for the fallback path + tests.
+- **`generatedText` undefined-field crash fix (V2)** — `/create` crashed with
+  `TypeError: Cannot read properties of undefined (reading 'length')` at
+  `AIGeneratePanel.tsx:319` (`generated.specializations.length`). Root cause:
+  `GeneratedTextSchema` declares `specializations`/`strengths`/`games` with
+  `.default([])` and `perGame` with `.default({})`, but Zod only applies those
+  defaults when data passes through `.parse()`. `generatedText` reached the UI
+  WITHOUT parsing from three untrusted entry points: IndexedDB `hydrate`
+  (stale/legacy persisted shape), `loadCloudProfile` (Prisma JSON column cast
+  `as GeneratedText` with no validation), and inline editor spreads. Fix is at
+  the data-model source, NOT a `?.length` patch:
+  - New `normalizeGeneratedText(text)` in `apps/web/src/lib/normalize.ts` —
+    runs `GeneratedTextSchema.safeParse`; on success returns parsed data
+    (defaults applied); on partial/legacy/foreign shape rebuilds a safe object
+    (arrays→`[]`, perGame→`{}`, salvages valid strings), returns `undefined`
+    only when no recognizable CV content remains.
+  - Wired into `normalizeProfile` (protects server render paths `/cv/[slug]` +
+    `/export` too), `store.hydrate`, `store.loadCloudProfile`, and
+    `store.setGeneratedText` (defense-in-depth). The component keeps bare
+    `.length`/`.map` because the contract now holds at runtime.
+  - Tests: `normalize.test.ts` (10) pin the exact crash shape + empty
+    specializations + incomplete AI response + all array fields non-undefined.
 
 ## What exists now (Phase 5 — Accounts, cloud profiles, sharing)
 
