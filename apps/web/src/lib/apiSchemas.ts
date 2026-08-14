@@ -15,5 +15,11 @@ export const RegenerateBodySchema = z.object({
   instruction: z.string().trim().min(1).max(300),
 });
 
+export const ExportBodySchema = z.object({
+  profile: GamerProfileSchema,
+  format: z.enum(["pdf", "png"]).default("pdf"),
+});
+
 export type GenerateBody = z.infer<typeof GenerateBodySchema>;
 export type RegenerateBody = z.infer<typeof RegenerateBodySchema>;
+export type ExportBody = z.infer<typeof ExportBodySchema>;

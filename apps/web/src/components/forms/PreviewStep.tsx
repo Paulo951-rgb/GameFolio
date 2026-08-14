@@ -3,6 +3,7 @@
 import { useEditorStore } from "@/lib/store";
 import { LivePreviewPane } from "@/components/preview/LivePreviewPane";
 import { AIGeneratePanel } from "@/components/ai/AIGeneratePanel";
+import { ExportMenu } from "@/components/export/ExportMenu";
 
 export function PreviewStep() {
   const reset = useEditorStore((s) => s.reset);
@@ -14,7 +15,7 @@ export function PreviewStep() {
         <div>
           <h2 className="text-lg font-semibold">Aperçu final</h2>
           <p className="mt-1 text-sm text-slate-400">
-            Génère le texte de ton CV, ajuste-le, puis exporte-le (export en phase 3).
+            Génère le texte de ton CV, ajuste-le, puis exporte-le en PDF ou image.
           </p>
         </div>
         <button
@@ -37,6 +38,7 @@ export function PreviewStep() {
       )}
 
       <AIGeneratePanel />
+      <ExportMenu />
 
       <div className="lg:hidden">
         <LivePreviewPane />

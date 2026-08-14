@@ -3,13 +3,14 @@
 import { useMemo } from "react";
 import { useEditorStore } from "@/lib/store";
 import { normalizeProfile } from "@/lib/normalize";
-import { MinimalistTemplate } from "./MinimalistTemplate";
+import { CVTemplate } from "./templates";
 
 /**
  * LivePreviewPane — subscribes to the editor store, builds the normalized
- * (visibility-filtered) CV data, and renders the active template. The same
- * filtered view is what the export step will render headlessly, so what you
- * see is what you export.
+ * (visibility-filtered) CV data, and renders the active template via the
+ * shared CVTemplate resolver. The same resolver + filtered view is what the
+ * export step renders headlessly, so what you see is what you export — for
+ * every template, not just the default.
  */
 export function LivePreviewPane() {
   const profile = useEditorStore((s) => s.profile);
@@ -23,7 +24,7 @@ export function LivePreviewPane() {
           Aperçu en direct
         </h2>
       </div>
-      <MinimalistTemplate data={data} theme={profile.themeConfig} />
+      <CVTemplate data={data} theme={profile.themeConfig} />
     </div>
   );
 }
