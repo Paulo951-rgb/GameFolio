@@ -42,7 +42,7 @@ export interface NormalizedCVData {
   generated?: GeneratedText;
 }
 
-import type { GameEntry } from "./game.js";
+import type { GameEntry } from "./game";
 export type GameEntryPublic = Omit<GameEntry, "moduleData"> & {
   moduleData: Record<string, unknown>;
 };

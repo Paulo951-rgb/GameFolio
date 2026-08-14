@@ -2,9 +2,9 @@
 // the client (form validation) and the server (route handler validation), so
 // we never trust client data blindly without re-validating identically.
 
-export * from "./profile.js";
-export * from "./profile-full.js";
-export * from "./module.js";
-export * from "./game.js";
-export * from "./theme.js";
-export * from "./ai.js";
+export * from "./profile";
+export * from "./profile-full";
+export * from "./module";
+export * from "./game";
+export * from "./theme";
+export * from "./ai";

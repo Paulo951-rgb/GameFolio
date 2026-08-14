@@ -1,9 +1,9 @@
 import type { ModuleDefinition } from "@gamer-cv/types";
-import { CompetitiveModule } from "./competitive.module.js";
-import { SinglePlayerModule } from "./singleplayer.module.js";
-import { SandboxModule } from "./sandbox.module.js";
-import { ProgressionModule } from "./progression.module.js";
-import { ClanModule } from "./clan.module.js";
+import { CompetitiveModule } from "./competitive.module";
+import { SinglePlayerModule } from "./singleplayer.module";
+import { SandboxModule } from "./sandbox.module";
+import { ProgressionModule } from "./progression.module";
+import { ClanModule } from "./clan.module";
 
 /**
  * Module registry — the canonical list of reusable generic modules. The module

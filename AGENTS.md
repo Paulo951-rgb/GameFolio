@@ -60,17 +60,43 @@ under `onlyBuiltDependencies`.
 
 ## Next phases (per design doc)
 
-- Phase 1 — Wizard UI (Next.js App Router + Zustand + react-hook-form/Zod +
-  DynamicGameForm + live preview, one template, IndexedDB autosave). The generic
-  form maps each `FieldDescriptor.type` to a widget with NO per-game code.
+- ~~Phase 1 — Wizard UI~~ DONE (see below).
 - Phase 2 — AI provider adapter (Anthropic first) behind `AIProvider`.
 - Phase 3 — headless server render (Playwright) for pixel-perfect PDF/image.
 - Phase 4+ — more templates, accounts/cloud, public sharing, scale catalogue.
+
+## What exists now (Phase 1 — Wizard sans IA)
+
+`apps/web` (Next.js App Router) + the React layer, all driven by the Phase 0
+domain packages — no per-game UI code anywhere.
+
+- State: Zustand store (`apps/web/src/lib/store.ts`) holds the in-progress
+  `GamerProfile`. Autosaves to IndexedDB (idb-keyval) on every change (debounced);
+  `hydrate()` restores on load → local-first, no account needed.
+- `apps/web/src/lib/games.ts` — client-side resolution helpers wrapping
+  `@gamer-cv/data` + `@gamer-cv/core`: `getGame`, `getResolvedGame`,
+  `resolveFieldOptions` (reads `game.gameData[<optionsSource minus "game.">]`),
+  `PLAYER_TYPES` taxonomy.
+- `DynamicGameForm` — maps `FieldDescriptor.type` → widget (select/multiselect/
+  number/text/textarea), options resolved from the game at render time. Uses
+  react-hook-form + zodResolver on the composite schema. **Multiselect is
+  controlled** (not registered): toggles call `setValue` + push to the store
+  directly, because RHF `watch` doesn't reliably cover `setValue`-only fields.
+- Wizard: 6 steps (info → player types → game count → games → customize →
+  preview) via generic `StepWizard` (no per-step URL routing; arrow-key nav).
+  Two-column desktop (edit | live preview), tab toggle on mobile.
+- `LivePreviewPane` builds `NormalizedCVData` through the visibility engine
+  (`filterPersonalInfo`/`filterGameEntry`) then renders the active template —
+  the SAME filtered view the export step will render headlessly (WYSIWYG).
+- One template (`MinimalistTemplate`) ships to validate the template engine.
+- `GET /api/games/search?q=` — thin server wrapper over the static registry.
 
 ## Conventions
 
 - Source-only TS packages: `main`/`types` point at `src/*.ts` (consumed
   uncompiled via TS path resolutions). Switch to `tsc` emit when a JS-only
   consumer (e.g. Next config) needs it.
-- Use `.js` extensions in relative imports (ESM + `moduleResolution: Bundler`).
+- **Do NOT use `.js` extensions in relative imports.** Next.js/webpack can't
+  resolve `./foo.js` for TS-source-only packages; use `./foo`. (Phase 0 used
+  `.js` extensions assuming a bundler with ESM resolution — removed in Phase 1.)
 - Comments explain non-obvious invariants only; do not restate code.

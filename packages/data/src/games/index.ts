@@ -1,9 +1,9 @@
 import type { GameDefinition, GameRegistry } from "@gamer-cv/types";
-import { Valorant } from "./valorant.js";
-import { Minecraft } from "./minecraft.js";
-import { Hades } from "./hades.js";
-import { ClashOfClans } from "./clash-of-clans.js";
-import { moduleRegistry } from "../modules/index.js";
+import { Valorant } from "./valorant";
+import { Minecraft } from "./minecraft";
+import { Hades } from "./hades";
+import { ClashOfClans } from "./clash-of-clans";
+import { moduleRegistry } from "../modules/index";
 import { resolveGame } from "@gamer-cv/core";
 
 /**

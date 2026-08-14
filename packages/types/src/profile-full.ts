@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { PersonalInfoSchema } from "./profile.js";
-import { GameEntrySchema } from "./game.js";
-import { ThemeConfigSchema, GeneratedTextSchema } from "./theme.js";
+import { PersonalInfoSchema } from "./profile";
+import { GameEntrySchema } from "./game";
+import { ThemeConfigSchema, GeneratedTextSchema } from "./theme";
 
 export const GamerProfileSchema = z.object({
   id: z.string(),

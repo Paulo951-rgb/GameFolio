@@ -1,4 +1,4 @@
-import type { GeneratedText } from "./theme.js";
+import type { GeneratedText } from "./theme";
 
 /**
  * Provider-agnostic AI interface (section 6). The rest of the app depends only
