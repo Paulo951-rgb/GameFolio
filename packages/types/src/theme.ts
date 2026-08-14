@@ -18,16 +18,62 @@ export const ThemeConfigSchema = z.object({
 export type ThemeConfig = z.infer<typeof ThemeConfigSchema>;
 
 /**
- * AI-generated text, stored SEPARATELY from raw data (GamerProfile.generatedText
+ * AI-generated CV text, stored SEPARATELY from raw data (GamerProfile.generatedText
  * vs ProfileGame.moduleData). Regeneration only touches this output, never the
  * source data. Structured JSON output (not free text) for reliable handling.
+ *
+ * V2 structure: the AI ANALYSES the profile (not just reformats it) and produces
+ * a richer CV. The legacy `summary` / `strengths` / `perGame` fields are kept
+ * (all optional) for backward compatibility with stored profiles and simpler
+ * templates; the new fields drive the analysis-driven CV.
+ *
+ * Anti-hallucination rule (enforced upstream by verifyFacts): every number,
+ * rank, character, role, hour... in the generated text MUST come from the
+ * source data. The AI may synthesize, organize and deduce GENERAL tendencies,
+ * but never invent a specific fact.
  */
-export const GeneratedTextSchema = z.object({
-  summary: z.string(),
-  strengths: z.array(z.string()),
-  // gameId -> generated text
-  perGame: z.record(z.string(), z.string()),
+export const GeneratedGameTextSchema = z.object({
+  gameId: z.string(),
+  title: z.string().optional(),
+  /** 1-3 sentence intelligent description of the player's experience on this game. */
+  description: z.string(),
+  /** Concrete, sourced highlights (rank reached, hours, roles, projects...). */
+  highlights: z.array(z.string()).default([]),
 });
+export type GeneratedGameText = z.infer<typeof GeneratedGameTextSchema>;
+
+export const GeneratedTextSchema = z
+  .object({
+    // --- V2 analysis-driven fields ---
+    /** Personalized presentation of the player. */
+    profileSummary: z.string().optional(),
+    /** Detected gaming identity / player profile, deduced from the data. */
+    gamingIdentity: z.string().optional(),
+    /** Strengths genuinely deduced from the data (general tendencies OK). */
+    strengths: z.array(z.string()).default([]),
+    /** Global experience summary across games. */
+    experience: z.string().optional(),
+    /** Specializations: roles, mechanics, skills, playstyles. */
+    specializations: z.array(z.string()).default([]),
+    /** Performance summary: ranks, records, progression. */
+    performance: z.string().optional(),
+    /** Per-game intelligent descriptions + highlights. */
+    games: z.array(GeneratedGameTextSchema).default([]),
+    // --- Legacy fields (kept for backward compat; populated by the generator) ---
+    summary: z.string().optional(),
+    perGame: z.record(z.string(), z.string()).default({}),
+  })
+  // A recognizable CV must carry at least one piece of generated content;
+  // an empty/foreign object (e.g. `{nope: true}`) is a bad shape, not a CV.
+  .refine(
+    (g) =>
+      Boolean(g.profileSummary ?? g.gamingIdentity ?? g.experience ?? g.performance ?? g.summary) ||
+      g.strengths.length > 0 ||
+      g.specializations.length > 0 ||
+      g.games.length > 0 ||
+      Object.keys(g.perGame).length > 0,
+    "GeneratedText must contain at least one populated section",
+  );
 export type GeneratedText = z.infer<typeof GeneratedTextSchema>;
 
 /**

@@ -5,12 +5,24 @@ import type { FieldDescriptor, ModuleDefinition } from "./module";
  * Static game metadata + composition of generic modules.
  * A game definition NEVER contains UI code — only data. Adding a game is a new
  * file in packages/data/games, never a new React component.
+ *
+ * V2 enrichment: aliases (search shortcuts like "lol"), platforms (PC/PS5/...
+ * — a single game spans platforms rather than being duplicated per platform),
+ * developer, releaseYear and a short description. All optional & additive so
+ * existing game definitions keep validating.
  */
 export interface GameDefinition {
   readonly id: string;
   readonly name: string;
   readonly publisher?: string;
+  readonly developer?: string;
   readonly genres: string[];
+  /** Search aliases / abbreviations, e.g. ["lol", "league"]. */
+  readonly aliases?: string[];
+  /** Platforms the game is available on, e.g. ["PC", "PS5", "Switch"]. */
+  readonly platforms?: string[];
+  readonly releaseYear?: number;
+  readonly description?: string;
   readonly icon?: string;
   readonly modules: string[]; // module ids to compose
   readonly gameData: Record<string, unknown>; // ranks, roles, characters, gameModes...

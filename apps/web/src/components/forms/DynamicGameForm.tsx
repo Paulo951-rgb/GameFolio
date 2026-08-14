@@ -41,9 +41,16 @@ export function DynamicGameForm({
     mode: "onChange",
   });
 
-  // Stream registered-field changes (text/select/number) to the store.
+  // Stream registered-field changes (text/select/number) to the store. Empty
+  // number inputs register as NaN (RHF valueAsNumber); strip them so NaN never
+  // reaches the store / IndexedDB / AI prompt (it would render as "NaN" and
+  // leak an ambiguous value to the model).
   const subscription = watch((data) => {
-    onChange(data as Record<string, unknown>);
+    const cleaned: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(data)) {
+      cleaned[k] = typeof v === "number" && Number.isNaN(v) ? undefined : v;
+    }
+    onChange(cleaned);
   });
   void subscription;
 

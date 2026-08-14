@@ -8,7 +8,11 @@ export const ClashOfClans = defineGame({
   id: "clash-of-clans",
   name: "Clash of Clans",
   publisher: "Supercell",
+  developer: "Supercell",
   genres: ["mobile", "stratégie"],
+  aliases: ["coc", "clash", "clash of clan"],
+  platforms: ["Mobile"],
+  releaseYear: 2012,
   icon: "/icons/coc.svg",
   modules: ["progression", "clan"],
   gameData: {

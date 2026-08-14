@@ -11,7 +11,7 @@ export const ClanModule = defineModule({
     clanName: z.string().optional(),
     clanRole: z.string().optional(),
     clanLevel: z.number().optional(),
-    warParticipation: z.boolean().optional(),
+    warParticipation: z.string().optional(),
     warsWon: z.number().optional(),
   }),
   fields: [

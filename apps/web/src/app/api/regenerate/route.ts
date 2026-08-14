@@ -37,6 +37,8 @@ export async function POST(req: Request) {
     const result = await generateFromProfile(
       parsed.data.profile,
       parsed.data.instruction,
+      parsed.data.mode,
+      parsed.data.personality,
     );
     return NextResponse.json(result);
   } catch (err) {

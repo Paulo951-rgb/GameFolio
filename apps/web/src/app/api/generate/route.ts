@@ -36,7 +36,12 @@ export async function POST(req: Request) {
   }
 
   try {
-    const result = await generateFromProfile(parsed.data.profile);
+    const result = await generateFromProfile(
+      parsed.data.profile,
+      undefined,
+      parsed.data.mode,
+      parsed.data.personality,
+    );
     return NextResponse.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erreur de génération.";

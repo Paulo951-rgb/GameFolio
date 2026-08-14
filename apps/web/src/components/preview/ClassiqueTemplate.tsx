@@ -9,6 +9,7 @@ import {
   formatLabel,
   formatValue,
 } from "./template-utils";
+import { GeneratedSections } from "./GeneratedSections";
 
 /**
  * Classique template — clean white background, serif type, professional résumé
@@ -64,19 +65,23 @@ export function ClassiqueTemplate({
         </section>
       )}
 
-      {generated?.summary && (
-        <section className={s.section}>
-          <h2 className={`mb-2 ${s.text} font-semibold uppercase tracking-wider border-b pb-1`} style={{ color: c.accent, borderColor: `${c.accent}33` }}>
-            Résumé
-          </h2>
-          <p className={`${s.text} leading-relaxed opacity-90`}>{generated.summary}</p>
-        </section>
+      {generated && (
+        <GeneratedSections
+          generated={generated}
+          t={{
+            primary: c.accent,
+            text: c.text,
+            headingClass: `mb-2 ${s.text} font-semibold uppercase tracking-wider border-b pb-1`,
+            bodyClass: `${s.text} leading-relaxed opacity-90`,
+            sectionClass: s.section,
+          }}
+        />
       )}
 
       {games.length > 0 && (
         <section>
           <h2 className={`mb-3 ${s.text} font-semibold uppercase tracking-wider border-b pb-1`} style={{ color: c.accent, borderColor: `${c.accent}33` }}>
-            Jeux
+            Détail par jeu
           </h2>
           <div className="space-y-4">
             {games.map((entry, i) => {
@@ -101,9 +106,6 @@ export function ClassiqueTemplate({
                     </dl>
                   )}
                   {entry.freeText && <p className="mt-2 text-sm opacity-75">{entry.freeText}</p>}
-                  {generated?.perGame?.[entry.gameId] && (
-                    <p className="mt-2 text-sm leading-relaxed opacity-90">{generated.perGame[entry.gameId]}</p>
-                  )}
                 </article>
               );
             })}

@@ -94,5 +94,8 @@ describe("template-utils", () => {
       expect(formatValue(350)).toBe("350");
       expect(formatValue("Diamant")).toBe("Diamant");
     });
+    it("renders NaN (empty number input) as an em dash, not 'NaN'", () => {
+      expect(formatValue(NaN)).toBe("—");
+    });
   });
 });
