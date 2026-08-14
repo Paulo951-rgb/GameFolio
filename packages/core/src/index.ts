@@ -6,3 +6,4 @@ export * from "./modules/index";
 export * from "./visibility/index";
 export * from "./templates/index";
 export * from "./generation/index";
+export * from "./stats/index";

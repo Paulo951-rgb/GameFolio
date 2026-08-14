@@ -8,3 +8,4 @@ export * from "./module";
 export * from "./game";
 export * from "./theme";
 export * from "./ai";
+export * from "./stats";

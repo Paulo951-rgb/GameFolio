@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useEditorStore } from "@/lib/store";
 import { LivePreviewPane } from "@/components/preview/LivePreviewPane";
+import { StatsPanel } from "@/components/preview/StatsPanel";
 import { AIGeneratePanel } from "@/components/ai/AIGeneratePanel";
 import { ExportMenu } from "@/components/export/ExportMenu";
 import { ShareModal } from "@/components/share/ShareModal";
@@ -55,6 +56,7 @@ export function PreviewStep() {
       )}
 
       <AIGeneratePanel />
+      <StatsPanel />
       <ExportMenu />
 
       <div className="flex flex-wrap gap-2">

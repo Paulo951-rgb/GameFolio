@@ -21,6 +21,7 @@ export function AIGeneratePanel() {
   const setGenerationError = useEditorStore((s) => s.setGenerationError);
 
   const [instruction, setInstruction] = useState("");
+  const [advanced, setAdvanced] = useState(false);
 
   const generated = profile.generatedText;
 
@@ -95,11 +96,37 @@ export function AIGeneratePanel() {
 
       {generated && (
         <div className="space-y-3 border-t border-slate-700 pt-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-slate-500">
+              {advanced
+                ? "Mode avancé : édition directe du texte généré."
+                : "Texte généré par l'IA."}
+            </span>
+            <button
+              type="button"
+              onClick={() => setAdvanced((v) => !v)}
+              className="rounded border border-slate-600 px-2 py-1 text-xs text-slate-300 transition hover:bg-slate-700/40"
+            >
+              {advanced ? "Quitter le mode avancé" : "Mode avancé"}
+            </button>
+          </div>
+
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
               Résumé
             </h3>
-            <p className="mt-1 text-sm text-slate-100">{generated.summary}</p>
+            {advanced ? (
+              <textarea
+                value={generated.summary}
+                onChange={(e) =>
+                  setGeneratedText({ ...generated, summary: e.target.value })
+                }
+                rows={3}
+                className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+              />
+            ) : (
+              <p className="mt-1 text-sm text-slate-100">{generated.summary}</p>
+            )}
           </section>
 
           {generated.strengths.length > 0 && (
@@ -107,11 +134,25 @@ export function AIGeneratePanel() {
               <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                 Points forts
               </h3>
-              <ul className="mt-1 list-inside list-disc text-sm text-slate-200">
-                {generated.strengths.map((s, i) => (
-                  <li key={i}>{s}</li>
-                ))}
-              </ul>
+              {advanced ? (
+                <textarea
+                  value={generated.strengths.join("\n")}
+                  onChange={(e) =>
+                    setGeneratedText({
+                      ...generated,
+                      strengths: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean),
+                    })
+                  }
+                  rows={Math.max(2, generated.strengths.length)}
+                  className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+                />
+              ) : (
+                <ul className="mt-1 list-inside list-disc text-sm text-slate-200">
+                  {generated.strengths.map((s, i) => (
+                    <li key={i}>{s}</li>
+                  ))}
+                </ul>
+              )}
             </section>
           )}
 
@@ -126,7 +167,21 @@ export function AIGeneratePanel() {
                     <dt className="text-sm font-medium text-violet-300">
                       {getGame(gameId)?.name ?? gameId}
                     </dt>
-                    <dd className="text-sm text-slate-200">{text}</dd>
+                    {advanced ? (
+                      <textarea
+                        value={text}
+                        onChange={(e) =>
+                          setGeneratedText({
+                            ...generated,
+                            perGame: { ...generated.perGame, [gameId]: e.target.value },
+                          })
+                        }
+                        rows={3}
+                        className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+                      />
+                    ) : (
+                      <dd className="text-sm text-slate-200">{text}</dd>
+                    )}
                   </div>
                 ))}
               </dl>

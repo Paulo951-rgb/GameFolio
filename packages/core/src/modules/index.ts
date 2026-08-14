@@ -48,9 +48,12 @@ export function defineGame(game: GameDefinition): GameDefinition {
 
 /**
  * Compose the Zod schemas of several modules into a single composite object
- * schema. Uses z.object merge semantics via spread of `.shape`, which fails
- * loudly (last-write-wins is acceptable here; intentionally overlapping keys
- * across modules of the same game are a definition error caught in buildGame).
+ * schema. Uses z.object merge semantics via spread of `.shape`, i.e.
+ * last-write-wins. Overlapping keys across modules are allowed because
+ * generic modules intentionally share semantic fields (e.g. `hours`,
+ * `completionPercent`, `accountLevel` mean the same thing everywhere); the
+ * composing game merely picks the later module's shape for that key. Field
+ * descriptors are deduplicated the same way (mergeFields).
  */
 export function composeSchemas(
   modules: ModuleDefinition[],
@@ -59,7 +62,6 @@ export function composeSchemas(
     throw new Error("composeSchemas requires at least one module");
   }
   const shape: z.ZodRawShape = {};
-  const seen = new Set<string>();
   for (const m of modules) {
     if (!(m.schema instanceof z.ZodObject)) {
       throw new Error(
@@ -67,12 +69,7 @@ export function composeSchemas(
       );
     }
     for (const key of Object.keys(m.schema.shape)) {
-      if (seen.has(key)) {
-        throw new Error(
-          `Field key "${key}" is declared by more than one module — composite schema would be ambiguous`,
-        );
-      }
-      seen.add(key);
+      // last-write-wins: a later module overrides an earlier one's field.
       shape[key] = m.schema.shape[key];
     }
   }
@@ -81,20 +78,22 @@ export function composeSchemas(
 
 /**
  * Merge the field descriptors of several modules, preserving module order then
- * field order. Deduplicates by key (defensive; composeSchemas already rejects
- * duplicates, so this is just a guard).
+ * field order. Deduplicates by key (last-write-wins), matching composeSchemas.
  */
 export function mergeFields(modules: ModuleDefinition[]): FieldDescriptor[] {
-  const out: FieldDescriptor[] = [];
-  const seen = new Set<string>();
+  // Last-write-wins: a later module's descriptor overrides an earlier one's for
+  // the same key, matching composeSchemas. We keep a Map so the field ORDER
+  // stays that of first appearance (stable for form rendering) while the value
+  // is the latest.
+  const byKey = new Map<string, FieldDescriptor>();
+  const order: string[] = [];
   for (const m of modules) {
     for (const f of m.fields) {
-      if (seen.has(f.key)) continue;
-      seen.add(f.key);
-      out.push(f);
+      if (!byKey.has(f.key)) order.push(f.key);
+      byKey.set(f.key, f);
     }
   }
-  return out;
+  return order.map((k) => byKey.get(k)!);
 }
 
 /**
