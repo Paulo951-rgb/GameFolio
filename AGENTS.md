@@ -35,9 +35,12 @@ Monorepo (pnpm workspaces), pure-TS domain packages only (no React/Next yet):
 
 ```bash
 pnpm install          # corepack manages pnpm (11.x). COREPACK_ENABLE_DOWNLOAD_PROMPT=0 in CI.
-pnpm -r test         # vitest — 52 tests (26 core + 11 data + 3 services + 6 types + 6 web), all green
+pnpm -r test         # vitest — 54 tests (26 core + 11 data + 5 services + 6 types + 6 web), all green
 pnpm -r typecheck    # tsc --noEmit across packages, all green
 pnpm -r build        # tsc --noEmit (packages) + next build (apps/web)
+# Run the export route live:
+#   PLAYWRIGHT_EXECUTABLE_PATH=/usr/bin/chromium AI_PROVIDER=mock \
+#     PORT=12000 pnpm --filter @gamer-cv/web start
 ```
 
 `pnpm-workspace.yaml` sets `verifyDepsBeforeRun: false` and `onlyBuiltDependencies:
@@ -62,8 +65,46 @@ under `onlyBuiltDependencies`.
 
 - ~~Phase 1 — Wizard UI~~ DONE (see below).
 - ~~Phase 2 — AI provider adapter (Anthropic first) behind `AIProvider`~~ DONE (see below).
-- Phase 3 — headless server render (Playwright) for pixel-perfect PDF/image.
+- ~~Phase 3 — headless server render (Playwright) for pixel-perfect PDF/image~~ DONE (see below).
 - Phase 4+ — more templates, accounts/cloud, public sharing, scale catalogue.
+
+## What exists now (Phase 3 — Export headless PDF/PNG)
+
+- `packages/services/src/export/` — `ExportService` interface +
+  `PlaywrightExporter` (PDF via `page.pdf`, PNG via `page.screenshot`). The
+  exporter is behind the interface so a future Browserless/cloud-render adapter
+  only needs to implement it. `createExportService()` factory, cached.
+- **WYSIWYG**: the export renders the SAME `MinimalistTemplate` component the
+  live preview uses, into an isolated `/export` render page (no app chrome,
+  A4-sized). Headless Chromium navigates there and captures. No html2canvas/jsPDF
+  (those degrade fonts/shadows — see architecture §8).
+- Stateless render: the profile travels base64url-encoded in the `?data=` query
+  param (encode server-side via `app/export/encode.ts` with `Buffer`; decode
+  client-side via `app/export/decode.ts` with `atob` — split files to keep
+  `Buffer` out of the client bundle). The render page sets `data-cv-rendered`
+  once mounted, which the exporter waits for before capturing.
+- API route `POST /api/export` — validates body with `ExportBodySchema`
+  (profile + `format: "pdf"|"png"`), rate-limited per IP (capacity 3, stricter
+  than AI since spawning a browser is expensive), returns the binary with
+  `Content-Type`/`Content-Disposition`. Render URL derived from request host
+  (`x-forwarded-proto`/`x-forwarded-host`), overridable via `EXPORT_BASE_URL`.
+- `ExportMenu` (`apps/web/src/components/export/`) — PDF/PNG buttons with
+  per-button loading + inline errors, downloads the blob. Wired into
+  `PreviewStep` (preview → AI → export flow).
+- Playwright is an **optional** dependency of both `packages/services` and
+  `apps/web`; the dynamic import uses a computed specifier + `webpackIgnore`
+  so webpack doesn't try to bundle it (its optional native deps like `kerberos`
+  can't be statically resolved). It's also in
+  `experimental.serverComponentsExternalPackages`. The `export/` module is
+  deliberately NOT re-exported from the services top-level barrel so the AI
+  routes don't pull playwright into their bundles; the export route imports from
+  `@gamer-cv/services/export`.
+- Browser binary: set `PLAYWRIGHT_EXECUTABLE_PATH=/usr/bin/chromium` (system
+  Debian chromium, `--no-sandbox` required in containers). Without it,
+  Playwright's bundled browser is used (must run `npx playwright install`).
+- Tests: `packages/services/test/export.test.ts` — real integration (spins a
+  local HTTP page, renders PDF + PNG, asserts `%PDF-` / PNG signature). Only
+  runs when `/usr/bin/chromium` exists (`describe.runIf`).
 
 ## What exists now (Phase 2 — Génération IA)
 
