@@ -5,6 +5,7 @@ export const BrawlStars = defineGame({
   name: "Brawl Stars",
   publisher: "Supercell",
   genres: ["mobile", "compétitif"],
+  platforms: ["Mobile"],
   icon: "/icons/brawl-stars.svg",
   modules: ["progression", "competitive"],
   gameData: {

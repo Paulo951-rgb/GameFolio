@@ -5,6 +5,7 @@ export const HollowKnight = defineGame({
   name: "Hollow Knight",
   publisher: "Team Cherry",
   genres: ["metroidvania", "indie"],
+  platforms: ["PC", "Console"],
   icon: "/icons/hollow-knight.svg",
   modules: ["singleplayer"],
   gameData: {

@@ -113,6 +113,21 @@ describe("data package — games & modules", () => {
     expect(ids).toContain("clash-of-clans");
     expect(ids).toContain("call-of-duty-mobile");
   });
+
+  it("every game declares at least one platform (metadata invariant)", () => {
+    // Platforms drive search-by-platform + the metadata display; a missing
+    // platforms list silently drops the game from platform search.
+    for (const g of games) {
+      expect(g.platforms, `${g.id} has no platforms`).toBeDefined();
+      expect(g.platforms!.length, `${g.id} has empty platforms`).toBeGreaterThan(0);
+    }
+  });
+
+  it("every game declares at least one genre", () => {
+    for (const g of games) {
+      expect(g.genres.length, `${g.id} has no genres`).toBeGreaterThan(0);
+    }
+  });
 });
 
 describe("module registry", () => {

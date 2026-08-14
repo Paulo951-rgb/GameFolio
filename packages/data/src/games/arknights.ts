@@ -5,6 +5,7 @@ export const Arknights = defineGame({
   name: "Arknights",
   publisher: "Yostar",
   genres: ["gacha", "tactique"],
+  platforms: ["Mobile"],
   icon: "/icons/arknights.svg",
   modules: ["gacha"],
   gameData: {

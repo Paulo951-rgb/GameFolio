@@ -12,18 +12,45 @@ import { useSession } from "@/lib/useSession";
 export function PreviewStep() {
   const reset = useEditorStore((s) => s.reset);
   const games = useEditorStore((s) => s.profile.games);
+  const setCloudProfileId = useEditorStore((s) => s.setCloudProfileId);
+  const cloudProfileId = useEditorStore((s) => s.cloudProfileId);
   const [shareOpen, setShareOpen] = useState(false);
+  const [saveState, setSaveState] = useState<{ busy: boolean; msg: string | null }>({
+    busy: false,
+    msg: null,
+  });
   const { user } = useSession();
 
   async function saveToCloud() {
-    const profile = useEditorStore.getState().profile;
-    const res = await fetch("/api/profiles", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(profile),
-    });
-    if (res.ok) {
-      alert("Profil sauvegardé dans le cloud. Retrouvez-le dans votre tableau de bord.");
+    setSaveState({ busy: true, msg: null });
+    try {
+      const profile = useEditorStore.getState().profile;
+      const id = useEditorStore.getState().cloudProfileId;
+      // PATCH the existing cloud row when we already have its id; POST (create)
+      // only the first time. This prevents duplicate cloud profiles on repeated
+      // saves (each save used to create a new row).
+      const res = await fetch(
+        id ? `/api/profiles/${id}` : "/api/profiles",
+        {
+          method: id ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(profile),
+        },
+      );
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error ?? `HTTP ${res.status}`);
+      }
+      if (!id) {
+        const created = (await res.json()) as { id: string };
+        setCloudProfileId(created.id);
+      }
+      setSaveState({ busy: false, msg: "Profil sauvegardé dans le cloud." });
+    } catch (err) {
+      setSaveState({
+        busy: false,
+        msg: err instanceof Error ? `Échec : ${err.message}` : "Échec de la sauvegarde.",
+      });
     }
   }
 
@@ -70,13 +97,24 @@ export function PreviewStep() {
         {user && (
           <button
             type="button"
+            disabled={saveState.busy}
             onClick={() => void saveToCloud()}
-            className="rounded-md border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800"
+            className="rounded-md border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-50"
           >
-            Sauvegarder dans le cloud
+            {saveState.busy ? "Sauvegarde…" : cloudProfileId ? "Mettre à jour le cloud" : "Sauvegarder dans le cloud"}
           </button>
         )}
       </div>
+
+      {saveState.msg && (
+        <p
+          className={`text-sm ${
+            saveState.msg.startsWith("Échec") ? "text-red-400" : "text-emerald-400"
+          }`}
+        >
+          {saveState.msg}
+        </p>
+      )}
 
       <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} />
 

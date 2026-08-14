@@ -58,3 +58,31 @@ export function formatValue(val: unknown): string {
   if (typeof val === "number" && Number.isNaN(val)) return "—";
   return String(val);
 }
+
+/**
+ * True when a module value carries no information (empty string, empty array,
+ * null, undefined, NaN). Templates use this to OMIT such entries from the
+ * "Détail par jeu" table instead of rendering a row of "—" placeholders, which
+ * cluttered the CV with every unused field of every game.
+ */
+export function isEmptyValue(val: unknown): boolean {
+  if (val == null) return true;
+  if (val === "") return true;
+  if (typeof val === "number" && Number.isNaN(val)) return true;
+  if (Array.isArray(val) && val.length === 0) return true;
+  return false;
+}
+
+/**
+ * Resolve a module field key to a human label, preferring the module's own
+ * `label` (French, curated — e.g. "Ratio K/D") over the generic camelCase
+ * humanization (e.g. "Kd Ratio"). `resolvedFields` is the `fields` array from
+ * `getResolvedGame(gameId).fields` (or any FieldDescriptor[]).
+ */
+export function resolveFieldLabel(
+  key: string,
+  resolvedFields?: { key: string; label?: string }[],
+): string {
+  const found = resolvedFields?.find((f) => f.key === key);
+  return found?.label ?? formatLabel(key);
+}

@@ -5,6 +5,7 @@ export const FinalFantasyXIV = defineGame({
   name: "Final Fantasy XIV",
   publisher: "Square Enix",
   genres: ["MMORPG", "mmo"],
+  platforms: ["PC", "Console"],
   icon: "/icons/ffxiv.svg",
   modules: ["progression", "clan"],
   gameData: {

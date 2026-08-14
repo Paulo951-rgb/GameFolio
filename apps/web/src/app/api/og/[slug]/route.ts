@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
  * unknown slugs 404 (don't reveal existence), mirroring /cv/[slug].
  */
 export async function GET(
-  req: Request,
+  _req: Request,
   { params }: { params: { slug: string } },
 ) {
   const row = await prisma.gamerProfile.findUnique({
@@ -30,14 +30,13 @@ export async function GET(
 
   const profile = dbProfileToProfile(row);
 
+  // Trusted base only (see /api/export): never derive from the client Host
+  // header (SSRF — the headless browser would fetch an attacker URL and leak
+  // the encoded profile in ?data=).
   const base =
     process.env.EXPORT_BASE_URL ??
-    (() => {
-      const proto = req.headers.get("x-forwarded-proto") ?? "http";
-      const host =
-        req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "localhost";
-      return `${proto}://${host}`;
-    })();
+    process.env.NEXT_PUBLIC_BASE_URL ??
+    `http://localhost:${process.env.PORT ?? 12000}`;
   const renderUrl = `${base.replace(/\/$/, "")}/export?data=${encodeProfileParam(profile)}`;
 
   const exporter = createExportService();

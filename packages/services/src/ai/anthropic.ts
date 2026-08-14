@@ -36,7 +36,10 @@ export class AnthropicProvider implements AIProvider {
     }
     this.client = opts.client ?? new Anthropic({ apiKey: opts.apiKey });
     this.model = opts.model ?? "claude-3-5-sonnet-latest";
-    this.maxTokens = opts.maxTokens ?? 2048;
+    // 4096 leaves headroom for a detailed CV (many games, full sections) so the
+    // structured JSON isn't truncated mid-object (truncation → parse failure →
+    // 500). 2048 was too tight for "detailed" mode / 5+ games.
+    this.maxTokens = opts.maxTokens ?? 4096;
   }
 
   async generate(input: GenerationInput): Promise<GenerationOutput> {

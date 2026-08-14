@@ -1,13 +1,14 @@
 "use client";
 
 import type { NormalizedCVData, ThemeConfig } from "@gamer-cv/types";
-import { getGame } from "@/lib/games";
+import { getGame, getResolvedGame } from "@/lib/games";
 import {
   spacing,
   resolveColors,
   resolveFont,
-  formatLabel,
   formatValue,
+  isEmptyValue,
+  resolveFieldLabel,
 } from "./template-utils";
 import { GeneratedSections } from "./GeneratedSections";
 
@@ -99,7 +100,12 @@ export function MinimalistTemplate({
           <div className="space-y-4">
             {games.map((entry, i) => {
               const game = getGame(entry.gameId);
-              const entries = Object.entries(entry.moduleData);
+              const fields = getResolvedGame(entry.gameId)?.fields;
+              // Omit empty values (untouched fields) so the CV shows only what
+              // the player actually filled in — no wall of "—" placeholders.
+              const entries = Object.entries(entry.moduleData).filter(
+                ([, val]) => !isEmptyValue(val),
+              );
               return (
                 <article
                   key={`${entry.gameId}-${i}`}
@@ -116,7 +122,7 @@ export function MinimalistTemplate({
                     <dl className={`mt-3 grid grid-cols-2 ${s.gap} text-sm`}>
                       {entries.map(([key, val]) => (
                         <div key={key}>
-                          <dt className="opacity-50">{formatLabel(key)}</dt>
+                          <dt className="opacity-50">{resolveFieldLabel(key, fields)}</dt>
                           <dd className="font-medium">{formatValue(val)}</dd>
                         </div>
                       ))}
