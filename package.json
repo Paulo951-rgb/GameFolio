@@ -1,0 +1,17 @@
+{
+  "name": "gamer-cv",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Gamer CV — data-driven game schema engine + constrained text generation",
+  "license": "MIT",
+  "packageManager": "pnpm@11.21.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}
