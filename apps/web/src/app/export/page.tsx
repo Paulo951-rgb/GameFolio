@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { GamerProfileSchema, type GamerProfile } from "@gamer-cv/types";
 import { normalizeProfile } from "@/lib/normalize";
-import { MinimalistTemplate } from "@/components/preview/MinimalistTemplate";
+import { CVTemplate } from "@/components/preview/templates";
 import { decodeProfileParam } from "./decode";
 
 /**
@@ -57,7 +57,7 @@ export default function ExportRenderPage() {
       )}
       {data && profile && (
         <div className="w-[210mm] bg-white text-slate-900 shadow-none">
-          <MinimalistTemplate data={data} theme={profile.themeConfig} />
+          <CVTemplate data={data} theme={profile.themeConfig} />
         </div>
       )}
     </div>

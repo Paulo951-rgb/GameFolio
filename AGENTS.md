@@ -35,7 +35,7 @@ Monorepo (pnpm workspaces), pure-TS domain packages only (no React/Next yet):
 
 ```bash
 pnpm install          # corepack manages pnpm (11.x). COREPACK_ENABLE_DOWNLOAD_PROMPT=0 in CI.
-pnpm -r test         # vitest — 54 tests (26 core + 11 data + 5 services + 6 types + 6 web), all green
+pnpm -r test         # vitest — 71 tests (26 core + 11 data + 5 services + 6 types + 23 web), all green
 pnpm -r typecheck    # tsc --noEmit across packages, all green
 pnpm -r build        # tsc --noEmit (packages) + next build (apps/web)
 # Run the export route live:
@@ -66,7 +66,37 @@ under `onlyBuiltDependencies`.
 - ~~Phase 1 — Wizard UI~~ DONE (see below).
 - ~~Phase 2 — AI provider adapter (Anthropic first) behind `AIProvider`~~ DONE (see below).
 - ~~Phase 3 — headless server render (Playwright) for pixel-perfect PDF/image~~ DONE (see below).
-- Phase 4+ — more templates, accounts/cloud, public sharing, scale catalogue.
+- ~~Phase 4 — Templates & personnalisation: 2-3 templates supplémentaires + thème personnalisable~~ DONE (see below).
+- Phase 5+ — accounts/cloud, public sharing, scale catalogue.
+
+## What exists now (Phase 4 — Templates & personnalisation)
+
+- **Template registry** (`apps/web/src/components/preview/templates.tsx`) — the
+  single source of truth mapping `templateId → {label, lazy component}`. Both
+  `LivePreviewPane` and the isolated `/export` render page resolve through the
+  shared `CVTemplate` resolver, so WYSIWYG export holds for EVERY template, not
+  just the default (architecture §7, §8). Each template is its own chunk via
+  `next/dynamic` (code-splitting, §2).
+- **4 templates**: Minimaliste (default, dark), Gaming (bold neon accents,
+  competitive/streamer), Classique (clean white serif, professional résumé),
+  Néon (cyberpunk, glowing text on near-black). All presentation-only: they
+  receive `NormalizedCVData + ThemeConfig` and render; swapping templates never
+  changes which data is shown (the visibility engine owns that).
+- **Shared presentation helpers** (`template-utils.ts`): `spacing(theme)` drives
+  page/section/gap/text from `density`; `resolveColors`/`resolveFont` apply
+  theme overrides with per-template defaults; `formatLabel`/`formatValue`
+  humanize module fields. All templates use these for consistency.
+- **Theme customization** (`CustomizeStep`) — template list now read from the
+  registry (single source). Controls: primary/accent/background/text colors,
+  font family (Inter / Georgia serif / Mono / system), density
+  (compact/normal/spacious). Density is now wired into spacing across all
+  templates (was stored-but-unused in Phase 1).
+- Tests: `template-utils.test.ts` (12 — spacing/colors/font/formatLabel/
+  formatValue), `templates.test.ts` (5 — all four component modules export a
+  callable component + id checklist). 71 total tests green; typecheck + build
+  green. Live-verified headless export for gaming/classique/neon (PNG) and neon
+  (PDF) — distinct per-template output sizes confirm the resolver honors
+  `templateId`.
 
 ## What exists now (Phase 3 — Export headless PDF/PNG)
 
