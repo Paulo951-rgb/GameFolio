@@ -9,8 +9,8 @@ import {
 import { resolveGame, resolveGameSchema, validateGameEntry } from "@gamer-cv/core";
 
 describe("data package — games & modules", () => {
-  it("has at least 4 test games", () => {
-    expect(games.length).toBeGreaterThanOrEqual(4);
+  it("has at least 30 games in the scaled catalogue", () => {
+    expect(games.length).toBeGreaterThanOrEqual(30);
   });
 
   it("all games have unique ids", () => {
@@ -26,16 +26,26 @@ describe("data package — games & modules", () => {
     }
   });
 
-  it("Clash of Clans composes progression + clan with no key collision", () => {
+  it("multi-module games compose shared fields (hours) without collision", () => {
+    // Genshin = gacha + singleplayer (both declare hours + completionPercent).
+    const genshin = gameRegistry.get("genshin-impact");
+    expect(genshin).toBeDefined();
+    const resolved = resolveGame(genshin!, moduleRegistry);
+    expect(resolved.modules.length).toBe(2);
+    expect(resolved.compositeSchema.shape).toHaveProperty("hours");
+    // No duplicate field rendered despite both modules declaring `hours`.
+    const hoursFields = resolved.fields.filter((f) => f.key === "hours");
+    expect(hoursFields.length).toBe(1);
+  });
+
+  it("Clash of Clans composes progression + clan", () => {
     const resolved = resolveGame(
       gameRegistry.get("clash-of-clans")!,
       moduleRegistry,
     );
     const keys = Object.keys(resolved.compositeSchema.shape);
-    // both modules contribute fields
     expect(keys).toContain("accountLevel"); // progression
     expect(keys).toContain("clanName"); // clan
-    // no collision: union of both modules' fields
     expect(keys.length).toBeGreaterThan(6);
   });
 
@@ -78,14 +88,23 @@ describe("data package — games & modules", () => {
     expect(searchGames("FPS").map((g) => g.id)).toContain("valorant");
   });
 
-  it("searchGames returns the whole catalogue for an empty query (up to limit)", () => {
+  it("searchGames returns up to limit games for an empty query", () => {
     expect(searchGames("").length).toBeLessThanOrEqual(10);
   });
 });
 
 describe("module registry", () => {
-  it("contains all 5 generic modules", () => {
-    for (const id of ["competitive", "singleplayer", "sandbox", "progression", "clan"]) {
+  it("contains all generic modules (competitive, singleplayer, sandbox, progression, clan, racing, battleroyale, gacha)", () => {
+    for (const id of [
+      "competitive",
+      "singleplayer",
+      "sandbox",
+      "progression",
+      "clan",
+      "racing",
+      "battleroyale",
+      "gacha",
+    ]) {
       expect(moduleRegistry.has(id)).toBe(true);
     }
   });

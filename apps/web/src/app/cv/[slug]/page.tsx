@@ -24,10 +24,23 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   });
   if (!profile || !profile.isPublic) return {};
   const tag = (profile.personalInfo as { gamerTag?: string }).gamerTag ?? "Gamer CV";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "";
+  const ogImage = `${baseUrl}/api/og/${params.slug}`;
   return {
     title: `${tag} — Gamer CV`,
     description: `Profil gaming de ${tag}.`,
-    openGraph: { title: `${tag} — Gamer CV`, description: `Profil gaming de ${tag}.`, type: "profile" },
+    openGraph: {
+      title: `${tag} — Gamer CV`,
+      description: `Profil gaming de ${tag}.`,
+      type: "profile",
+      images: [{ url: ogImage, width: 1200, height: 630, alt: `Gamer CV de ${tag}` }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${tag} — Gamer CV`,
+      description: `Profil gaming de ${tag}.`,
+      images: [ogImage],
+    },
   };
 }
 

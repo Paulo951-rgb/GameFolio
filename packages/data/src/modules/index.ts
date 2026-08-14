@@ -4,6 +4,9 @@ import { SinglePlayerModule } from "./singleplayer.module";
 import { SandboxModule } from "./sandbox.module";
 import { ProgressionModule } from "./progression.module";
 import { ClanModule } from "./clan.module";
+import { RacingModule } from "./racing.module";
+import { BattleRoyaleModule } from "./battleroyale.module";
+import { GachaModule } from "./gacha.module";
 
 /**
  * Module registry — the canonical list of reusable generic modules. The module
@@ -16,6 +19,9 @@ export const modules: ModuleDefinition[] = [
   SandboxModule,
   ProgressionModule,
   ClanModule,
+  RacingModule,
+  BattleRoyaleModule,
+  GachaModule,
 ];
 
 export const moduleRegistry = new Map<string, ModuleDefinition>(
@@ -28,4 +34,7 @@ export {
   SandboxModule,
   ProgressionModule,
   ClanModule,
+  RacingModule,
+  BattleRoyaleModule,
+  GachaModule,
 };

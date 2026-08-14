@@ -91,18 +91,23 @@ describe("composeSchemas", () => {
     expect(composite.safeParse({ rank: "Or", hours: 10 }).success).toBe(true);
   });
 
-  it("rejects ambiguous overlapping field keys across modules", () => {
+  it("merges overlapping field keys last-write-wins (shared semantic fields)", () => {
     const a = defineModule({
       id: "a",
       schema: z.object({ shared: z.string().optional() }),
-      fields: [{ key: "shared", label: "S", type: "text" }],
+      fields: [{ key: "shared", label: "S-a", type: "text" }],
     });
     const b = defineModule({
       id: "b",
-      schema: z.object({ shared: z.string().optional() }),
-      fields: [{ key: "shared", label: "S", type: "text" }],
+      schema: z.object({ shared: z.number().optional() }),
+      fields: [{ key: "shared", label: "S-b", type: "number" }],
     });
-    expect(() => composeSchemas([a, b])).toThrow(/ambiguous/);
+    // No throw: overlapping keys are allowed (generic modules share fields like
+    // `hours`). The later module's shape + descriptor win.
+    const composite = composeSchemas([a, b]);
+    expect(composite.safeParse({ shared: 10 }).success).toBe(true);
+    expect(composite.safeParse({ shared: "x" }).success).toBe(false);
+    expect(mergeFields([a, b]).find((f) => f.key === "shared")?.type).toBe("number");
   });
 
   it("rejects a non-z.object schema (module must be composable)", () => {

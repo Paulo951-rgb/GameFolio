@@ -10,6 +10,7 @@ export function GameEntryStep() {
   const games = useEditorStore((s) => s.profile.games);
   const updateGame = useEditorStore((s) => s.updateGame);
   const removeGame = useEditorStore((s) => s.removeGame);
+  const reorderGames = useEditorStore((s) => s.reorderGames);
 
   const selectedIds = games.map((g) => g.gameId).filter(Boolean);
 
@@ -42,13 +43,33 @@ export function GameEntryStep() {
                 Jeu #{index + 1}
                 {game && <span className="ml-2 text-violet-300">{game.name}</span>}
               </h3>
-              <button
-                type="button"
-                onClick={() => removeGame(index)}
-                className="text-xs text-slate-500 hover:text-red-400"
-              >
-                Retirer
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  aria-label="Monter"
+                  disabled={index === 0}
+                  onClick={() => reorderGames(index, index - 1)}
+                  className="rounded px-2 py-1 text-xs text-slate-400 transition hover:text-slate-100 disabled:opacity-30"
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  aria-label="Descendre"
+                  disabled={index === games.length - 1}
+                  onClick={() => reorderGames(index, index + 1)}
+                  className="rounded px-2 py-1 text-xs text-slate-400 transition hover:text-slate-100 disabled:opacity-30"
+                >
+                  ↓
+                </button>
+                <button
+                  type="button"
+                  onClick={() => removeGame(index)}
+                  className="ml-2 text-xs text-slate-500 hover:text-red-400"
+                >
+                  Retirer
+                </button>
+              </div>
             </div>
 
             {!entry.gameId ? (
