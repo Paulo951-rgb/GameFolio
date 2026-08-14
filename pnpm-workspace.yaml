@@ -2,11 +2,16 @@ packages:
   - "apps/*"
   - "packages/*"
 
-onlyBuiltDependencies:
-  - esbuild
-  - prisma
-  - "@prisma/client"
-  - "@prisma/engines"
+# pnpm 11 build-script approval. `allowBuilds` (a package-name → boolean map)
+# replaces the removed `onlyBuiltDependencies`/`neverBuiltDependencies` settings.
+# Without this, pnpm 11 silently ignores build scripts and prints
+# ERR_PNPM_IGNORED_BUILDS — esbuild's binary isn't installed and the
+# @prisma/client postinstall (`prisma generate`) doesn't run automatically.
+allowBuilds:
+  "@prisma/client": true
+  "@prisma/engines": true
+  esbuild: true
+  prisma: true
 
 # Skip the pre-run deps verification that re-triggers install and blocks tests
 # in this environment (esbuild/prisma build scripts are already approved above).

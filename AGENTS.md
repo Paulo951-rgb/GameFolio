@@ -43,10 +43,23 @@ pnpm -r build        # tsc --noEmit (packages) + next build (apps/web)
 #     PORT=12000 pnpm --filter @gamer-cv/web start
 ```
 
-`pnpm-workspace.yaml` sets `verifyDepsBeforeRun: false` and `onlyBuiltDependencies:
-[esbuild]` — the pre-run deps check otherwise re-triggers install and blocks
-tests in this sandbox. If you add a package with a native build script, list it
-under `onlyBuiltDependencies`.
+`pnpm-workspace.yaml` sets `verifyDepsBeforeRun: false` and `allowBuilds`
+(a package→boolean map, the pnpm 11 replacement for the removed
+`onlyBuiltDependencies`/`neverBuiltDependencies` settings). It approves
+`esbuild`, `prisma`, `@prisma/client`, `@prisma/engines` — without it pnpm 11
+silently skips their build scripts (`ERR_PNPM_IGNORED_BUILDS`), so esbuild's
+binary isn't installed and `@prisma/client`'s postinstall `prisma generate`
+doesn't run. If you add a package with a native build script, add it under
+`allowBuilds` (value `true`).
+
+**Cross-platform scripts**: the `db:*` Prisma scripts (`prisma generate`,
+`prisma db push`, `prisma migrate dev`, `prisma db seed`) are plain commands
+with NO `VAR=value` prefix — that Unix shell syntax breaks Windows
+PowerShell/CMD ("'PRISMA_SKIP_POSTINSTALL_GENERATE' n'est pas reconnu"). The
+former `PRISMA_SKIP_POSTINSTALL_GENERATE=true` prefix was a no-op anyway (that
+flag only affects the `@prisma/client` postinstall hook at install time, not
+the `prisma` CLI). Do not re-add env-var prefixes to scripts; use `cross-env`
+if one is ever genuinely needed.
 
 ## Key invariants (do not break)
 
