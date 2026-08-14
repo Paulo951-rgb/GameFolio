@@ -259,7 +259,7 @@ analysis-driven AI generation.
   Legends, mc→Minecraft) — no duplicate game rows. Games added across FPS,
   battle-royale, sandbox/survival, MOBA, racing, RPG, Nintendo/PlayStation/Xbox,
   mobile, and legacy consoles.
-- **Modules** (`packages/data/src/modules/`): 27 composable modules (was 8).
+- **Modules** (`packages/data/src/modules/`): 28 composable modules (was 8).
   New: `survival`, `building`, `redstone`, `modding`, `serverAdmin`,
   `contentCreator`, `completion`, `achievement`, `moba`, `mmo`, `guild`,
   `cardgame`, `strategy`, `sports`, `fighting`, `speedrun`, `creative`,

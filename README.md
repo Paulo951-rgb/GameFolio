@@ -1,10 +1,12 @@
 # GameFolio
 
-> **Gamer CV** — un moteur de schémas de jeux piloté par les données, couplé à un moteur de génération de texte contraint (IA qui ne peut pas halluciner).
+> **Gamer CV** — un moteur intelligent de création de profil gamer : base de données de jeux pilotée par les données + génération de CV par IA qui **analyse et comprend** le parcours du joueur au lieu de reformatter les données.
 
 GameFolio génère des CV gaming (export PDF/image, partage public) sans jamais coder un jeu en dur dans un composant React. Chaque jeu est une **définition de données** (composition de modules + métadonnées) ; un formulaire dynamique et un aperçu génériques interprètent ces schémas. Ajouter un jeu = un fichier, pas de code UI.
 
-Le texte de CV est produit par une IA via un pipeline anti-hallucination : seules les données saisies sont envoyées, la sortie est structurée en JSON, puis vérifiée post-génération (les nombres/noms absents des données sources sont signalés « à vérifier »).
+La génération du CV suit un vrai pipeline d'analyse : les données saisies sont d'abord **enrichies du contexte de chaque jeu** (métadonnées, rangs, rôles, personnages), puis l'IA **analyse le profil**, en déduit les points forts et tendances, et **rédige** un CV structuré — sans jamais inventer de fait absent des données sources (pipeline anti-hallucination : seules les valeurs saisies sont envoyées, la sortie JSON est validée par Zod, puis vérifiée post-génération).
+
+> **V2** — moteur intelligent + vraie IA : 71 jeux, 28 modules composables, recherche tolérante aux fautes, génération IA par analyse (modes + tonalités), statut fournisseur honnête.
 
 ---
 
@@ -19,6 +21,7 @@ Le texte de CV est produit par une IA via un pipeline anti-hallucination : seule
 - [Base de données](#base-de-données)
 - [Ajouter un jeu](#ajouter-un-jeu)
 - [Ajouter un module générique](#ajouter-un-module-générique)
+- [Recherche de jeux](#recherche-de-jeux)
 - [Ajouter un template](#ajouter-un-template)
 - [Le moteur de génération IA](#le-moteur-de-génération-ia)
 - [Export PDF/image](#export-pdfimage)
@@ -38,7 +41,7 @@ Le texte de CV est produit par une IA via un pipeline anti-hallucination : seule
 | Validation | Zod (schémas partagés client/serveur) |
 | Base de données | Prisma — **SQLite** en local/dev, **PostgreSQL** en production (JSONB pour les données hétérogènes par jeu) |
 | Export | Playwright/Puppeteer headless (rendu serveur = fidélité pixel-perfect avec l'aperçu) |
-| IA | Abstraction `AIProvider` (Anthropic par défaut, remplaçable) |
+| IA | Abstraction `AIProvider` : `mock` (offline, déterministe — par défaut) / `anthropic` (réel) |
 
 ---
 
@@ -119,15 +122,15 @@ Copier `.env.example` vers `.env` (à la racine) et renseigner :
 | Variable | Description | Requis |
 |---|---|---|
 | `DATABASE_URL` | Chaîne Prisma. `file:./db.db` (SQLite) en local, URL PostgreSQL en prod. | oui |
-| `AI_PROVIDER` | Fournisseur IA actif (`anthropic` par défaut). | pour la génération IA |
-| `ANTHROPIC_API_KEY` | Clé API Anthropic. | pour la génération IA |
+| `AI_PROVIDER` | Fournisseur IA actif. `mock` (offline, déterministe) par défaut ; `anthropic` pour une vraie génération. | non (mock par défaut) |
+| `ANTHROPIC_API_KEY` | Clé API Anthropic. Requis uniquement si `AI_PROVIDER=anthropic`. | pour la vraie IA |
 | `ANTHROPIC_MODEL` | Modèle Anthropic (défaut codé sinon). | optionnel |
-| `AUTH_SECRET` | Secret de session pour l'auth (NextAuth-like). | pour les comptes (v2) |
+| `AUTH_SECRET` | Secret de session pour l'auth (≥ 16 caractères). | pour les comptes |
 | `NEXT_PUBLIC_BASE_URL` | URL publique de base (pour les liens de partage / og:image). | pour le partage |
 | `EXPORT_BASE_URL` | URL de rendu isolé si différente du host de requête (déploiements avancés). | optionnel |
 | `PLAYWRIGHT_EXECUTABLE_PATH` | Chemin absolu vers un binaire Chromium si Playwright ne trouve pas le sien. | optionnel |
 
-Sans clé IA, l'app fonctionne entièrement (création, aperçu, export, sauvegarde locale) — seule la génération de texte IA est indisponible.
+> **Sans clé IA**, l'app fonctionne entièrement et la génération de CV utilise le **mode mock** (offline, déterministe) pour pouvoir tester tout le pipeline. Pour une vraie rédaction IA, passez `AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY`. L'UI affiche un bandeau de statut explicite (« Mode hors-ligne — Mock » vs « Anthropic (réel) ») — l'app ne prétend jamais faire de l'IA quand elle n'en fait pas. Le statut est aussi interrogable via `GET /api/ai/status`.
 
 ---
 
@@ -158,13 +161,18 @@ export const MonJeu = defineGame({
   id: "mon-jeu",
   name: "Mon Jeu",
   publisher: "Studio",
+  developer: "Studio Dev",
+  releaseYear: 2024,
   genres: ["FPS", "compétitif"],
   icon: "/icons/mon-jeu.svg",
-  modules: ["competitive"],            // composition de modules existants
+  aliases: ["mj"],                  // synonymes de recherche (déduplication, pas de lignes dupliquées par plateforme)
+  platforms: ["PC", "PS5", "Xbox"],
+  modules: ["competitive", "characterbased", "weaponbased"],  // composition de modules
   gameData: {
     ranks: ["Bronze", "Argent", "Or"],
     roles: ["Attaquant", "Support"],
     characters: ["Hero A", "Hero B"],
+    modes: ["Compétitif", "Deathmatch"],
   },
 });
 ```
@@ -181,7 +189,9 @@ export const games: GameDefinition[] = [
 
 Le moteur valide au démarrage que tous les modules référencés existent : un jeu mal configuré échoue immédiatement, jamais à l'exécution utilisateur.
 
-Le catalogue actuel contient **44 jeux** couvrant FPS, MOBA, battle royale, course, sandbox/survival, solo, MMO/progression et gacha.
+> **Déduplication** : un même jeu multi-plateformes (Minecraft Java/Bedrock, Fortnite PC/console, Rocket League…) est **une seule entrée** avec `platforms` + `aliases`, jamais des lignes dupliquées.
+
+Le catalogue actuel contient **71 jeux** couvrant FPS, MOBA, battle royale, course, sandbox/survival, RPG/solo, MMO/progression, gacha, Nintendo/PlayStation/Xbox, mobile et consoles legacy.
 
 ---
 
@@ -209,7 +219,27 @@ export const MonModule = defineModule({
 
 Enregistrer dans `packages/data/src/modules/index.ts`. La composition des schémas utilise `last-write-wins` : les champs sémantiques partagés (`hours`, `completionPercent`, `accountLevel`) sont fusionnés sans collision lorsqu'ils signifient la même chose à travers les modules.
 
-8 modules génériques couvrent la grande majorité des jeux : `competitive`, `singleplayer`, `sandbox`, `progression`, `clan`, `racing`, `battleroyale`, `gacha`.
+**28 modules composables** couvrent tous les types de jeux. Un jeu en combine plusieurs — par exemple Valorant = `competitive` + `characterbased` + `weaponbased` ; Minecraft = `sandbox` + `survival` + `building` + `redstone` + `creative` (aucun rang compétitif forcé) ; un jeu solo = `singleplayer` + `completion` + `achievement`.
+
+| Catégorie | Modules |
+|---|---|
+| Compétition / FPS | `competitive`, `characterbased`, `weaponbased`, `rolebased` |
+| Solo / progression | `singleplayer`, `progression`, `completion`, `achievement` |
+| Sandbox / créatif | `sandbox`, `survival`, `building`, `redstone`, `creative`, `modding` |
+| Social / multi | `clan`, `guild`, `mmo`, `serveradmin`, `contentcreator` |
+| Genres | `moba`, `battleroyale`, `racing`, `cardgame`, `strategy`, `sports`, `fighting`, `speedrun`, `gacha` |
+
+---
+
+## Recherche de jeux
+
+La recherche supporte le nom exact, la correspondance partielle, les fautes de frappe simples, les **alias** et le filtrage par genre/plateforme (`packages/data/src/search.ts`) :
+
+- ordre de résolution : `exact` → `starts with` → `includes` → `genre` → `platform` → **fuzzy** (distance de Levenshtein ≤ 2, sur le nom + les alias).
+
+Exemples : `lol` → League of Legends · `mc` → Minecraft · `rocket` → Rocket League · `minecaft` (faute) → Minecraft.
+
+La recherche s'effectue côté serveur via `GET /api/search?q=` : le catalogue complet n'est jamais chargé dans le navigateur (pagination / lazy loading), ce qui reste performant même avec une base de plusieurs centaines de jeux.
 
 ---
 
@@ -235,20 +265,44 @@ L'inscrire dans `apps/web/src/components/preview/templates.tsx`. Changer de temp
 
 ## Le moteur de génération IA
 
-Pipeline anti-hallucination en 4 étapes (détail dans `packages/core/src/generation` et `packages/services/src/ai`) :
+Le but V2 : l'IA **analyse et comprend** le profil au lieu de reformatter. Le pipeline (détail dans `packages/core/src/generation` et `packages/services/src/ai`) :
 
-1. **Sérialisation** : seuls les champs remplis sont envoyés (les champs vides ne le sont jamais — l'IA ne peut pas les « compléter »). La visibilité est ré-appliquée côté serveur avant le prompt.
-2. **Prompt système strict** : rôle défini, interdiction explicite d'inventer une statistique, un rang ou un fait non présent.
-3. **Sortie JSON structurée** : `{ summary, strengths[], perGame: { [gameId]: text } }`, validée par Zod côté serveur avant d'être renvoyée.
-4. **Vérification post-génération** : extraction des nombres/noms du texte produit, comparaison avec les données d'entrée. Tout écart est signalé à l'utilisateur (« à vérifier »), ou déclenche une régénération (1 retry).
+```
+Données utilisateur
+   → enrichissement du contexte (par jeu)
+   → analyse du profil + déduction des tendances
+   → rédaction structurée (JSON)
+   → validation Zod
+   → vérification anti-hallucination
+   → CV final
+```
 
-Le texte généré est stocké **séparément** des données brutes (`generatedText` vs `moduleData`) : une régénération ne touche jamais les données sources.
+1. **Sérialisation + visibilité** : seuls les champs remplis sont envoyés (les champs vides ne le sont jamais — l'IA ne peut pas les « compléter »). La visibilité (`hidden`/`private`) est ré-appliquée côté serveur avant le prompt. Les champs numériques vides (qui produisent `NaN`) sont **explicitement écartés** pour ne jamais fuiter vers le modèle.
+2. **Enrichissement du contexte (`enrichForGeneration`)** : chaque jeu reçoit son `__context` (nom, genres, modules, rangs/rôles/personnages/modes du catalogue) et son champ libre (`freeText`) est remonté au premier niveau. L'IA interprète ainsi les valeurs **par jeu** : un rang « Diamant » n'a pas la même signification selon le jeu, et « 100 % de complétion » diffère de « Champion ».
+3. **Prompt système d'analyse (`buildSystemPrompt`)** : rôle défini, consigne explicite d'**ANALYSER** puis **déduire des tendances** (orientation compétitive, polyvalence, expérience créative…), puis **rédiger** — jamais reformatter. Interdiction d'inventer une statistique, un rang, une compétition, un record ou une performance non présent.
+4. **Modes & tonalités** : 5 modes (`standard`, `rapide`, `détaillé`, `compétitif`, `portfolio`) et 8 tonalités (`professionnel`, `gaming`, `compétitif`, `sobre`, `dynamique`, `très détaillé`, `court`, `naturel`) ajustent la longueur et l'accent mis.
+5. **Sortie JSON structurée V2** : validée par Zod avant d'être renvoyée.
 
-**Régénération guidée** : un nouvel appel avec le texte précédent + les données brutes + l'instruction utilisateur (« plus court », « sans mentionner mon âge »).
+   ```json
+   {
+     "profileSummary": "…",
+     "gamingIdentity": "…",
+     "strengths": ["…", "…"],
+     "experience": "…",
+     "games": [
+       { "gameId": "valorant", "title": "Valorant", "description": "…", "highlights": ["…"] }
+     ]
+   }
+   ```
 
-**Mode avancé** : édition directe du texte généré (résumé, points forts, par jeu) + réordonnancement des jeux, sans repasser par l'IA.
+   Un `.refine()` rejette un JSON vide ou de forme étrangère. Les données sources restent **séparées** du texte généré (`generatedText` vs `moduleData`) : une régénération ne touche jamais les données originales.
+6. **Vérification post-génération (`verifyFacts`)** : extraction des nombres et noms propres du texte produit, comparaison avec les données d'entrée **et** le `gameMetaBlob` (construit depuis l'enrichissement — noms de jeux, rangs, agents…). Tout écart est signalé à l'utilisateur (« à vérifier »). Les noms propres légitimes issus du catalogue ne déclenchent plus de faux positifs.
 
-L'interface `AIProvider` rend le fournisseur remplaçable sans toucher au domaine (`anthropic`, `mock` pour les tests ; `openai`, `gemini`, `openrouter` prévus).
+**Régénération intelligente** : un nouvel appel avec le texte précédent + les données brutes + l'instruction libre de l'utilisateur (« rends-le plus professionnel », « mets Minecraft en avant », « retire les informations personnelles », « plus court »). L'IA reçoit toujours les données sources.
+
+**Statut fournisseur honnête** : `GET /api/ai/status` renvoie `{ providerId, real, configured }`. L'UI affiche un bandeau explicite — « Mode hors-ligne — Mock » (offline, déterministe) ou « Anthropic (réel) ». L'app ne simule jamais une vraie génération en production.
+
+L'interface `AIProvider` rend le fournisseur remplaçable sans toucher au domaine (`mock`, `anthropic` ; `openai`, `gemini`, `openrouter` prévus).
 
 ---
 
@@ -268,13 +322,13 @@ L'**og:image** des pages publiques (`/cv/[slug]`) est générée via la même ro
 ## Tests, typecheck, build
 
 ```bash
-pnpm test         # tous les tests (vitest) — 91 tests
+pnpm test         # tous les tests (vitest) — 114 tests
 pnpm typecheck    # tsc --noEmit sur tous les packages
 pnpm build        # build de tous les packages + Next.js
 pnpm --filter web build   # build uniquement l'app web
 ```
 
-Au moment de la rédaction : **91 tests passent** (core 33, data 12, services 5, web 41), typecheck et build verts.
+Au moment de la rédaction : **114 tests passent** (types 6, core 45, data 16, services 5, web 42), typecheck et build verts.
 
 ---
 
@@ -286,7 +340,8 @@ Au moment de la rédaction : **91 tests passent** (core 33, data 12, services 5,
 - ✅ **Phase 3 — Export** : rendu headless serveur, PDF + image, fidélité avec l'aperçu.
 - ✅ **Phase 4 — Templates & personnalisation** : templates supplémentaires, thème personnalisable.
 - ✅ **Phase 5 — Comptes & partage** : auth optionnelle, cloud, pages publiques, QR code.
-- ✅ **Phase 6 — Scale** : extension du catalogue (44 jeux), nouveaux modules (racing, battleroyale, gacha), statistiques agrégées, mode d'édition avancé, og:image.
+- ✅ **Phase 6 — Scale** : extension du catalogue, nouveaux modules, statistiques agrégées, mode d'édition avancé, og:image.
+- ✅ **V2 — Moteur intelligent & vraie IA** : base de jeux enrichie (71 jeux, 28 modules composables, aliases/déduplication, métadonnées), recherche tolérante aux fautes (serveur), pipeline IA par **analyse** (enrichissement du contexte par jeu, modes + tonalités, `GeneratedText` V2 structuré), `verifyFacts` avec `gameMetaBlob`, statut fournisseur honnête (`/api/ai/status`), correctif NaN multi-couches.
 
 Chaque phase est livrable et utilisable seule.
 
