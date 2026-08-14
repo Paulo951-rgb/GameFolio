@@ -11,7 +11,7 @@ const nextConfig = {
   // resolved by webpack). Externalize so the dynamic import resolves from
   // node_modules at runtime.
   experimental: {
-    serverComponentsExternalPackages: ["playwright", "playwright-core"],
+    serverComponentsExternalPackages: ["playwright", "playwright-core", "@prisma/client"],
   },
 };
 

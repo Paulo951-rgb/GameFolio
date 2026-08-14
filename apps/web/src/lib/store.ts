@@ -59,6 +59,8 @@ export interface EditorState {
   prevStep: () => void;
   reset: () => void;
   hydrate: () => Promise<void>;
+  /** Replace the in-memory profile with a cloud-loaded one + persist locally. */
+  loadCloudProfile: (profile: GamerProfile) => void;
   setGeneratedText: (text: GeneratedText) => void;
   setFlaggedFacts: (facts: string[]) => void;
   setGenerating: (v: boolean) => void;
@@ -201,6 +203,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       generationError: null,
     });
     void idbDel(STORAGE_KEY);
+  },
+
+  loadCloudProfile: (profile) => {
+    set({ profile, currentStep: 0, flaggedFacts: [], isGenerating: false, generationError: null });
+    void idbSet(STORAGE_KEY, profile);
   },
 
   hydrate: async () => {
