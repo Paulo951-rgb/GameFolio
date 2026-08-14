@@ -6,7 +6,7 @@ GameFolio génère des CV gaming (export PDF/image, partage public) sans jamais 
 
 La génération du CV suit un vrai pipeline d'analyse : les données saisies sont d'abord **enrichies du contexte de chaque jeu** (métadonnées, rangs, rôles, personnages), puis l'IA **analyse le profil**, en déduit les points forts et tendances, et **rédige** un CV structuré — sans jamais inventer de fait absent des données sources (pipeline anti-hallucination : seules les valeurs saisies sont envoyées, la sortie JSON est validée par Zod, puis vérifiée post-génération).
 
-> **V2** — moteur intelligent + vraie IA : 71 jeux, 28 modules composables, recherche tolérante aux fautes, génération IA par analyse (modes + tonalités), statut fournisseur honnête.
+> **V2** — moteur intelligent + vraie IA : 72 jeux, 28 modules composables, recherche tolérante aux fautes, génération IA par analyse (modes + tonalités), statut fournisseur honnête, sécurité export (anti-SSRF), robustesse des données générées.
 
 ---
 
@@ -127,7 +127,7 @@ Copier `.env.example` vers `.env` (à la racine) et renseigner :
 | `ANTHROPIC_MODEL` | Modèle Anthropic (défaut codé sinon). | optionnel |
 | `AUTH_SECRET` | Secret de session pour l'auth (≥ 16 caractères). | pour les comptes |
 | `NEXT_PUBLIC_BASE_URL` | URL publique de base (pour les liens de partage / og:image). | pour le partage |
-| `EXPORT_BASE_URL` | URL de rendu isolé si différente du host de requête (déploiements avancés). | optionnel |
+| `EXPORT_BASE_URL` | URL de rendu isolé pour l'export PDF/image et og:image. **Source de confiance unique** (anti-SSRF) — par défaut `NEXT_PUBLIC_BASE_URL`, jamais les en-têtes `Host`/`x-forwarded-*` du client. | recommandé (prod) |
 | `PLAYWRIGHT_EXECUTABLE_PATH` | Chemin absolu vers un binaire Chromium si Playwright ne trouve pas le sien. | optionnel |
 
 > **Sans clé IA**, l'app fonctionne entièrement et la génération de CV utilise le **mode mock** (offline, déterministe) pour pouvoir tester tout le pipeline. Pour une vraie rédaction IA, passez `AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY`. L'UI affiche un bandeau de statut explicite (« Mode hors-ligne — Mock » vs « Anthropic (réel) ») — l'app ne prétend jamais faire de l'IA quand elle n'en fait pas. Le statut est aussi interrogable via `GET /api/ai/status`.
@@ -191,7 +191,7 @@ Le moteur valide au démarrage que tous les modules référencés existent : un 
 
 > **Déduplication** : un même jeu multi-plateformes (Minecraft Java/Bedrock, Fortnite PC/console, Rocket League…) est **une seule entrée** avec `platforms` + `aliases`, jamais des lignes dupliquées.
 
-Le catalogue actuel contient **71 jeux** couvrant FPS, MOBA, battle royale, course, sandbox/survival, RPG/solo, MMO/progression, gacha, Nintendo/PlayStation/Xbox, mobile et consoles legacy.
+Le catalogue actuel contient **72 jeux** couvrant FPS, MOBA, battle royale, course, sandbox/survival, RPG/solo, MMO/progression, gacha, Nintendo/PlayStation/Xbox, mobile et consoles legacy.
 
 ---
 
@@ -239,7 +239,7 @@ La recherche supporte le nom exact, la correspondance partielle, les fautes de f
 
 Exemples : `lol` → League of Legends · `mc` → Minecraft · `rocket` → Rocket League · `minecaft` (faute) → Minecraft.
 
-La recherche s'effectue côté serveur via `GET /api/search?q=` : le catalogue complet n'est jamais chargé dans le navigateur (pagination / lazy loading), ce qui reste performant même avec une base de plusieurs centaines de jeux.
+La recherche s'effectue côté serveur via `GET /api/games/search?q=` : le catalogue complet n'est jamais chargé dans le navigateur (pagination / lazy loading), ce qui reste performant même avec une base de plusieurs centaines de jeux.
 
 ---
 
@@ -315,20 +315,22 @@ L'export utilise un **rendu serveur headless** (Playwright/Puppeteer) — pas `h
 
 Ce qui est affiché dans l'aperçu est exactement ce qui est exporté. Le service d'export est isolé (`packages/services/src/export`) car le lancement de Chromium est coûteux et incompatible avec certains environnements serverless purs.
 
-L'**og:image** des pages publiques (`/cv/[slug]`) est générée via la même route d'export (`/api/og/[slug]`).
+> **Sécurité (anti-SSRF)** : l'URL de rendu isolé est dérivée de la variable d'environnement `EXPORT_BASE_URL` (à défaut `NEXT_PUBLIC_BASE_URL`), **jamais** des en-têtes `Host`/`x-forwarded-*` contrôlés par le client. Chromium ne navigue donc que vers la page de rendu du serveur lui-même — impossible de le faire pointer vers un hôte arbitraire via un en-tête usurpé.
+
+L'**og:image** des pages publiques (`/cv/[slug]`) est générée via la même route d'export (`/api/og/[slug]`), qui partage la même protection anti-SSRF.
 
 ---
 
 ## Tests, typecheck, build
 
 ```bash
-pnpm test         # tous les tests (vitest) — 114 tests
+pnpm test         # tous les tests (vitest) — 139 tests
 pnpm typecheck    # tsc --noEmit sur tous les packages
 pnpm build        # build de tous les packages + Next.js
 pnpm --filter web build   # build uniquement l'app web
 ```
 
-Au moment de la rédaction : **114 tests passent** (types 6, core 45, data 16, services 5, web 42), typecheck et build verts.
+Au moment de la rédaction : **139 tests passent** (types 6, core 45, data 18, services 5, web 65), typecheck et build verts.
 
 ---
 
@@ -341,7 +343,8 @@ Au moment de la rédaction : **114 tests passent** (types 6, core 45, data 16, s
 - ✅ **Phase 4 — Templates & personnalisation** : templates supplémentaires, thème personnalisable.
 - ✅ **Phase 5 — Comptes & partage** : auth optionnelle, cloud, pages publiques, QR code.
 - ✅ **Phase 6 — Scale** : extension du catalogue, nouveaux modules, statistiques agrégées, mode d'édition avancé, og:image.
-- ✅ **V2 — Moteur intelligent & vraie IA** : base de jeux enrichie (71 jeux, 28 modules composables, aliases/déduplication, métadonnées), recherche tolérante aux fautes (serveur), pipeline IA par **analyse** (enrichissement du contexte par jeu, modes + tonalités, `GeneratedText` V2 structuré), `verifyFacts` avec `gameMetaBlob`, statut fournisseur honnête (`/api/ai/status`), correctif NaN multi-couches.
+- ✅ **V2 — Moteur intelligent & vraie IA** : base de jeux enrichie (72 jeux, 28 modules composables, aliases/déduplication, métadonnées), recherche tolérante aux fautes (serveur), pipeline IA par **analyse** (enrichissement du contexte par jeu, modes + tonalités, `GeneratedText` V2 structuré), `verifyFacts` avec `gameMetaBlob`, statut fournisseur honnête (`/api/ai/status`), correctif NaN multi-couches.
+- ✅ **V2 — Audit & robustesse** : correctif **anti-SSRF** sur l'export/og (URL de rendu issue d'`EXPORT_BASE_URL`, jamais des en-têtes client) ; robustesse IA (`max_tokens` 4096, retry sur JSON tronqué, `GenerationFormatError` ré-essayable) ; rendu template propre (labels FR + filtrage des champs vides, plus de mur de « — ») ; **normalisation de `generatedText`** à chaque point d'entrée (hydrate / cloud / éditions) — fixe le crash `/create` (`generated.specializations.length` sur donnée périmée) ; déduplication des profils cloud (`cloudProfileId`) ; `DELETE /api/profiles/[id]`.
 
 Chaque phase est livrable et utilisable seule.
 
