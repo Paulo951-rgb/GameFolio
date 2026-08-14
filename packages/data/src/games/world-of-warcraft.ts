@@ -5,6 +5,7 @@ export const WorldOfWarcraft = defineGame({
   name: "World of Warcraft",
   publisher: "Blizzard",
   genres: ["MMORPG", "mmo"],
+  platforms: ["PC"],
   icon: "/icons/wow.svg",
   modules: ["progression", "clan"],
   gameData: {

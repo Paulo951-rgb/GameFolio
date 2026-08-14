@@ -15,17 +15,18 @@ export const dynamic = "force-dynamic";
  * SAME template component the user saw in the live preview → pixel-perfect
  * (architecture §8). Rate-limited per IP (expensive: spawns a browser).
  *
- * The base render URL is derived from the request host so it works behind any
- * proxy; override with EXPORT_BASE_URL for unusual setups.
+ * Security: the render URL base is derived from TRUSTED server env
+ * (EXPORT_BASE_URL → NEXT_PUBLIC_BASE_URL → localhost:PORT) — never from the
+ * client-controlled Host header, which would let a caller redirect the
+ * headless browser to an arbitrary URL (SSRF) and exfiltrate the profile in
+ * the `?data=` param.
  */
-function resolveRenderUrl(profile: unknown, req: Request): string {
-  const base = process.env.EXPORT_BASE_URL;
-  if (base) {
-    return `${base.replace(/\/$/, "")}/export?data=${encodeProfileParam(profile)}`;
-  }
-  const proto = req.headers.get("x-forwarded-proto") ?? "http";
-  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "localhost";
-  return `${proto}://${host}/export?data=${encodeProfileParam(profile)}`;
+function resolveRenderUrl(profile: unknown): string {
+  const base =
+    process.env.EXPORT_BASE_URL ??
+    process.env.NEXT_PUBLIC_BASE_URL ??
+    `http://localhost:${process.env.PORT ?? 12000}`;
+  return `${base.replace(/\/$/, "")}/export?data=${encodeProfileParam(profile)}`;
 }
 
 export async function POST(req: Request) {
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const renderUrl = resolveRenderUrl(parsed.data.profile, req);
+  const renderUrl = resolveRenderUrl(parsed.data.profile);
   const exporter = createExportService();
 
   try {

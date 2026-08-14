@@ -5,6 +5,7 @@ export const Destiny2 = defineGame({
   name: "Destiny 2",
   publisher: "Bungie",
   genres: ["FPS", "RPG", "looter"],
+  platforms: ["PC", "Console"],
   icon: "/icons/destiny2.svg",
   modules: ["progression", "clan", "competitive"],
   gameData: {

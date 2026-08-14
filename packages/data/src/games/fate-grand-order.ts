@@ -5,6 +5,7 @@ export const FateGrandOrder = defineGame({
   name: "Fate/Grand Order",
   publisher: "Lasengle",
   genres: ["gacha", "RPG"],
+  platforms: ["Mobile"],
   icon: "/icons/fgo.svg",
   modules: ["gacha"],
   gameData: {

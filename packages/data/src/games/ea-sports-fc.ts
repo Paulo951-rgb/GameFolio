@@ -5,6 +5,7 @@ export const FIFA = defineGame({
   name: "EA SPORTS FC",
   publisher: "EA Sports",
   genres: ["sport", "compétitif"],
+  platforms: ["PC", "Console"],
   icon: "/icons/fc.svg",
   modules: ["competitive"],
   gameData: {

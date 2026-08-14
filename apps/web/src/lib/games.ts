@@ -27,7 +27,8 @@ export function getCompositeSchema(id: string) {
 /**
  * Resolve a field's concrete options from a game's gameData, e.g.
  * optionsSource "game.ranks" -> game.gameData.ranks. Returns undefined when the
- * source is missing — the form renders a free text fallback in that case.
+ * source is missing OR empty — the form then renders a free-text fallback so a
+ * game whose gameData lacks a given list never shows a dead/empty dropdown.
  */
 export function resolveFieldOptions(
   game: GameDefinition,
@@ -37,7 +38,7 @@ export function resolveFieldOptions(
   if (!field.optionsSource) return undefined;
   const key = field.optionsSource.replace(/^game\./, "");
   const value = game.gameData[key];
-  return Array.isArray(value) ? (value as string[]) : undefined;
+  return Array.isArray(value) && value.length > 0 ? (value as string[]) : undefined;
 }
 
 // Player-type taxonomy for the selector step (Bartle-inspired, gamer-facing).

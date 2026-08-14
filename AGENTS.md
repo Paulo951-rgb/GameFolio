@@ -35,7 +35,7 @@ Monorepo (pnpm workspaces), pure-TS domain packages only (no React/Next yet):
 
 ```bash
 pnpm install          # corepack manages pnpm (11.x). COREPACK_ENABLE_DOWNLOAD_PROMPT=0 in CI.
-pnpm -r test         # vitest — 71 tests (26 core + 11 data + 5 services + 6 types + 23 web), all green
+pnpm -r test         # vitest — 139 tests (45 core + 18 data + 5 services + 6 types + 65 web), all green
 pnpm -r typecheck    # tsc --noEmit across packages, all green
 pnpm -r build        # tsc --noEmit (packages) + next build (apps/web)
 # Run the export route live:
@@ -211,6 +211,62 @@ domain packages — no per-game UI code anywhere.
   the SAME filtered view the export step will render headlessly (WYSIWYG).
 - One template (`MinimalistTemplate`) ships to validate the template engine.
 - `GET /api/games/search?q=` — thin server wrapper over the static registry.
+
+- ~~Phase 5+ — accounts/cloud, public sharing, scale catalogue.~~ DONE (see above).
+- **V2 audit pass (security/resilience/UX)** — applied on top of Phase 5:
+  - **SSRF fix**: `resolveRenderUrl(profile)` in `apps/web/src/app/api/export/route.ts`
+    no longer takes the request; it derives the render base URL from the trusted
+    `EXPORT_BASE_URL` env var (falling back to `NEXT_PUBLIC_BASE_URL`) instead of
+    client-controlled `Host`/`x-forwarded-*` headers. Chromium therefore always
+    navigates to the server's own render page, never to an attacker-supplied URL.
+    Same hardening in `apps/web/src/app/api/og/[slug]/route.ts` (handler param is
+    now `_req`).
+  - **AI robustness**: `AnthropicProvider.maxTokens` raised 2048→4096 (avoids
+    truncated JSON for detailed/competitive CVs); `isRetryable` exported from
+    `apps/web/src/lib/generation.ts` — the generate/regenerate routes retry
+    **once** on `GenerationFormatError` (truncation/prose/schema mismatch) but
+    never on auth/rate-limit/network errors.
+  - **Duplicate-cloud-profile fix**: `cloudProfileId` added to `EditorState`
+    (`store.ts`, separate IndexedDB key `gamer-cv:cloud-profile-id`). `loadCloudProfile`
+    sets it; `PreviewStep` + `ShareModal` PATCH the existing profile when set,
+    POST otherwise, then store the returned id — no more duplicate rows on repeat saves.
+  - **DELETE** added to `/api/profiles/[id]/route.ts` (owner-only; 403 foreign,
+    404 missing).
+  - `resolveFieldOptions` (`games.ts`) now falls back to free-text input when a
+    select/multiselect has empty options (game data drift no longer blanks the form).
+- **Template field-rendering fix (V2)** — the "Détail par jeu" raw-data table in
+  ALL 4 templates used to dump every module field, showing untouched fields as a
+  wall of "—" with raw camelCase labels ("Kd Ratio", "Headshot Percent"). Two new
+  helpers in `template-utils.ts`:
+  - `isEmptyValue(val)` — flags null/undefined/""/NaN/empty-array so templates
+    `.filter(([,v]) => !isEmptyValue(v))` and render only what the player filled in.
+  - `resolveFieldLabel(key, fields?)` — prefers the module's curated French
+    `FieldDescriptor.label` (e.g. "Ratio K/D") over `formatLabel`'s camelCase split.
+  Every template now resolves `getResolvedGame(gameId).fields` and passes it to
+  `resolveFieldLabel`. CV detail is French + noise-free across Minimalist/Gaming/
+  Classique/Néon (live-verified: Valorant shows only "Heures approximatives: 800").
+  `formatLabel` kept for the fallback path + tests.
+- **`generatedText` undefined-field crash fix (V2)** — `/create` crashed with
+  `TypeError: Cannot read properties of undefined (reading 'length')` at
+  `AIGeneratePanel.tsx:319` (`generated.specializations.length`). Root cause:
+  `GeneratedTextSchema` declares `specializations`/`strengths`/`games` with
+  `.default([])` and `perGame` with `.default({})`, but Zod only applies those
+  defaults when data passes through `.parse()`. `generatedText` reached the UI
+  WITHOUT parsing from three untrusted entry points: IndexedDB `hydrate`
+  (stale/legacy persisted shape), `loadCloudProfile` (Prisma JSON column cast
+  `as GeneratedText` with no validation), and inline editor spreads. Fix is at
+  the data-model source, NOT a `?.length` patch:
+  - New `normalizeGeneratedText(text)` in `apps/web/src/lib/normalize.ts` —
+    runs `GeneratedTextSchema.safeParse`; on success returns parsed data
+    (defaults applied); on partial/legacy/foreign shape rebuilds a safe object
+    (arrays→`[]`, perGame→`{}`, salvages valid strings), returns `undefined`
+    only when no recognizable CV content remains.
+  - Wired into `normalizeProfile` (protects server render paths `/cv/[slug]` +
+    `/export` too), `store.hydrate`, `store.loadCloudProfile`, and
+    `store.setGeneratedText` (defense-in-depth). The component keeps bare
+    `.length`/`.map` because the contract now holds at runtime.
+  - Tests: `normalize.test.ts` (10) pin the exact crash shape + empty
+    specializations + incomplete AI response + all array fields non-undefined.
 
 ## What exists now (Phase 5 — Accounts, cloud profiles, sharing)
 

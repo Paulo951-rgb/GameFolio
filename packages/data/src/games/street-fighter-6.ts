@@ -5,6 +5,7 @@ export const StreetFighter6 = defineGame({
   name: "Street Fighter 6",
   publisher: "Capcom",
   genres: ["combat", "compétitif"],
+  platforms: ["PC", "Console"],
   icon: "/icons/sf6.svg",
   modules: ["competitive"],
   gameData: {

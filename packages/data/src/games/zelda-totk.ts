@@ -5,6 +5,7 @@ export const ZeldaTearsOfTheKingdom = defineGame({
   name: "Zelda: Tears of the Kingdom",
   publisher: "Nintendo",
   genres: ["action-aventure", "open world"],
+  platforms: ["Switch"],
   icon: "/icons/totk.svg",
   modules: ["singleplayer"],
   gameData: {

@@ -11,8 +11,13 @@ import type {
   FieldVisibility,
   GeneratedText,
 } from "@gamer-cv/types";
+import { normalizeGeneratedText } from "@/lib/normalize";
 
 const STORAGE_KEY = "gamer-cv:current-profile";
+/** Separate key for the cloud DB id (kept apart from the profile blob so the
+ *  profile persistence shape is unchanged — no migration risk). null when the
+ *  in-progress profile has never been saved to / loaded from the cloud. */
+const CLOUD_ID_KEY = "gamer-cv:cloud-profile-id";
 
 /**
  * Editor store (Zustand) — the single source of truth for the profile being
@@ -39,6 +44,10 @@ export interface EditorState {
   profile: GamerProfile;
   currentStep: number;
   hydrated: boolean;
+  /** Cloud DB id of the profile when it has been saved/loaded from the cloud.
+   *  Tracked so repeated saves PATCH the same row instead of POSTing duplicates.
+   *  null for a purely-local profile. Persisted alongside the profile. */
+  cloudProfileId: string | null;
   /** Facts the anti-hallucination check flagged as "à vérifier". */
   flaggedFacts: string[];
   /** True while an AI generation request is in flight. */
@@ -61,6 +70,8 @@ export interface EditorState {
   hydrate: () => Promise<void>;
   /** Replace the in-memory profile with a cloud-loaded one + persist locally. */
   loadCloudProfile: (profile: GamerProfile) => void;
+  /** Record the cloud DB id after a save, so future saves PATCH not POST. */
+  setCloudProfileId: (id: string | null) => void;
   setGeneratedText: (text: GeneratedText) => void;
   setFlaggedFacts: (facts: string[]) => void;
   setGenerating: (v: boolean) => void;
@@ -81,6 +92,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   profile: makeDefaultProfile(),
   currentStep: 0,
   hydrated: false,
+  cloudProfileId: null,
   flaggedFacts: [],
   isGenerating: false,
   generationError: null,
@@ -198,30 +210,73 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({
       profile,
       currentStep: 0,
+      cloudProfileId: null,
       flaggedFacts: [],
       isGenerating: false,
       generationError: null,
     });
     void idbDel(STORAGE_KEY);
+    void idbDel(CLOUD_ID_KEY);
   },
 
   loadCloudProfile: (profile) => {
-    set({ profile, currentStep: 0, flaggedFacts: [], isGenerating: false, generationError: null });
+    // A profile loaded from the cloud carries its DB id as profile.id — record
+    // it so subsequent saves PATCH the same row instead of creating duplicates.
+    // The generatedText JSON column is cast `as GeneratedText` by the mapper
+    // with no validation; an older DB row can carry a partial/legacy shape whose
+    // array fields are undefined at runtime → normalize before it reaches the UI.
+    if (profile.generatedText !== undefined) {
+      profile.generatedText = normalizeGeneratedText(profile.generatedText);
+    }
+    set({
+      profile,
+      currentStep: 0,
+      cloudProfileId: profile.id,
+      flaggedFacts: [],
+      isGenerating: false,
+      generationError: null,
+    });
     void idbSet(STORAGE_KEY, profile);
+    void idbSet(CLOUD_ID_KEY, profile.id);
+  },
+
+  setCloudProfileId: (id) => {
+    set({ cloudProfileId: id });
+    if (typeof window !== "undefined") {
+      if (id) void idbSet(CLOUD_ID_KEY, id);
+      else void idbDel(CLOUD_ID_KEY);
+    }
   },
 
   hydrate: async () => {
     if (typeof window === "undefined") return;
     const saved = (await idbGet(STORAGE_KEY)) as GamerProfile | undefined;
+    const cloudId = (await idbGet(CLOUD_ID_KEY)) as string | undefined;
     if (saved) {
-      set({ profile: saved, hydrated: true });
+      // A profile restored from IndexedDB may have been persisted by an older
+      // app version or carry a partial/legacy generatedText whose array fields
+      // are missing (undefined at runtime despite the TS type). Re-validate it
+      // through the schema so the UI never crashes on generated.specializations
+      // .length / generated.games.map etc. (see normalizeGeneratedText).
+      if (saved.generatedText !== undefined) {
+        saved.generatedText = normalizeGeneratedText(saved.generatedText);
+      }
+      set({ profile: saved, cloudProfileId: cloudId ?? null, hydrated: true });
     } else {
       set({ hydrated: true });
     }
   },
 
   setGeneratedText: (text) => {
-    const profile = { ...get().profile, generatedText: text };
+    // Defense-in-depth: the API route already parses the AI output through
+    // GeneratedTextSchema, but inline edits (editText/editGame spreads) and any
+    // future caller could introduce a partial shape. Normalize so the runtime
+    // always matches the GeneratedText contract.
+    const normalized = normalizeGeneratedText(text);
+    const profile = {
+      ...get().profile,
+      generatedText: normalized as GeneratedText | undefined,
+    };
     set({ profile });
     scheduleSave(profile);
   },

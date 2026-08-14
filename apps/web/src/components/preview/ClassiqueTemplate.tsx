@@ -1,13 +1,14 @@
 "use client";
 
 import type { NormalizedCVData, ThemeConfig } from "@gamer-cv/types";
-import { getGame } from "@/lib/games";
+import { getGame, getResolvedGame } from "@/lib/games";
 import {
   spacing,
   resolveColors,
   resolveFont,
-  formatLabel,
   formatValue,
+  isEmptyValue,
+  resolveFieldLabel,
 } from "./template-utils";
 import { GeneratedSections } from "./GeneratedSections";
 
@@ -86,7 +87,10 @@ export function ClassiqueTemplate({
           <div className="space-y-4">
             {games.map((entry, i) => {
               const game = getGame(entry.gameId);
-              const entries = Object.entries(entry.moduleData);
+              const fields = getResolvedGame(entry.gameId)?.fields;
+              const entries = Object.entries(entry.moduleData).filter(
+                ([, val]) => !isEmptyValue(val),
+              );
               return (
                 <article key={`${entry.gameId}-${i}`}>
                   <div className="flex items-baseline justify-between">
@@ -99,7 +103,7 @@ export function ClassiqueTemplate({
                     <dl className={`mt-2 grid grid-cols-2 ${s.gap} text-sm`}>
                       {entries.map(([key, val]) => (
                         <div key={key}>
-                          <dt className="italic opacity-50">{formatLabel(key)}</dt>
+                          <dt className="italic opacity-50">{resolveFieldLabel(key, fields)}</dt>
                           <dd>{formatValue(val)}</dd>
                         </div>
                       ))}

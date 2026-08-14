@@ -14,5 +14,6 @@ export const Fortnite = defineGame({
   modules: ["battleroyale", "creative", "contentcreator"],
   gameData: {
     ranks: ["Bronze", "Argent", "Or", "Platine", "Diamant", "Élite", "Champion", "Unreal"],
+    gameModes: ["Solo", "Duo", "Squads", "Zero Build", "Reload", "Créatif"],
   },
 });

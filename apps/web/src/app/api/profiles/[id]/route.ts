@@ -63,6 +63,27 @@ export async function PATCH(req: Request, ctx: { params: { id: string } }) {
         games: { create: gamesToNestedCreate(p.games) },
       },
     }),
-  ]);
+      ]);
+  return NextResponse.json({ id: ctx.params.id });
+}
+
+/**
+ * DELETE a profile. Owner-only (403 for non-owners, 404 if not found).
+ * ProfileGame rows cascade-delete via the Prisma relation. Completes the
+ * documented get/patch/delete contract on this route.
+ */
+export async function DELETE(_req: Request, ctx: { params: { id: string } }) {
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  }
+  const existing = await prisma.gamerProfile.findUnique({ where: { id: ctx.params.id } });
+  if (!existing) {
+    return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+  }
+  if (existing.userId !== userId) {
+    return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  }
+  await prisma.gamerProfile.delete({ where: { id: ctx.params.id } });
   return NextResponse.json({ id: ctx.params.id });
 }

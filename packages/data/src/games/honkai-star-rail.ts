@@ -5,6 +5,7 @@ export const HonkaiStarRail = defineGame({
   name: "Honkai: Star Rail",
   publisher: "HoYoverse",
   genres: ["RPG", "gacha", "tactique"],
+  platforms: ["PC", "Mobile"],
   icon: "/icons/hsr.svg",
   modules: ["gacha", "singleplayer"],
   gameData: {

@@ -5,6 +5,7 @@ export const GeometryDash = defineGame({
   name: "Geometry Dash",
   publisher: "RobTop Games",
   genres: ["rythme", "indie"],
+  platforms: ["PC", "Mobile"],
   icon: "/icons/gd.svg",
   modules: ["singleplayer"],
   gameData: {

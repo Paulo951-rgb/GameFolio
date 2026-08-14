@@ -6,6 +6,7 @@ export const ClashRoyale = defineGame({
   name: "Clash Royale",
   publisher: "Supercell",
   genres: ["mobile", "stratégie"],
+  platforms: ["Mobile"],
   icon: "/icons/cr.svg",
   modules: ["progression", "clan"],
   gameData: {

@@ -91,14 +91,30 @@ function FieldRenderer({
   currentValue: unknown;
 }) {
   const options = resolveFieldOptions(game, field);
+  const hasOptions = !!options?.length;
 
   if (field.type === "select") {
+    // No resolved options -> free-text fallback so the field stays usable
+    // (optionsSource fields use z.string(), so free text validates).
+    if (!hasOptions) {
+      return (
+        <label className="block">
+          <span className={labelClass}>{field.label}</span>
+          <input
+            type="text"
+            className={inputClass}
+            placeholder={field.placeholder ?? "Saisie libre"}
+            {...register(field.key)}
+          />
+        </label>
+      );
+    }
     return (
       <label className="block">
         <span className={labelClass}>{field.label}</span>
         <select className={inputClass} {...register(field.key)}>
           <option value="">—</option>
-          {options?.map((o) => (
+          {options.map((o) => (
             <option key={o} value={o}>
               {o}
             </option>
@@ -114,6 +130,32 @@ function FieldRenderer({
     const selected = Array.isArray(currentValue)
       ? (currentValue as string[])
       : [];
+
+    // No resolved options -> free-text fallback (comma-separated -> array).
+    // The schema is z.array(z.string()), so a split array validates.
+    if (!hasOptions) {
+      return (
+        <label className="block">
+          <span className={labelClass}>{field.label}</span>
+          <input
+            type="text"
+            className={inputClass}
+            placeholder="Saisie libre (séparé par des virgules)"
+            value={selected.join(", ")}
+            onChange={(e) =>
+              onMultiChange(
+                field.key,
+                e.target.value
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter(Boolean),
+              )
+            }
+          />
+        </label>
+      );
+    }
+
     function toggle(opt: string, checked: boolean) {
       const next = checked
         ? [...selected, opt]
@@ -124,7 +166,7 @@ function FieldRenderer({
       <fieldset className="block">
         <span className={labelClass}>{field.label}</span>
         <div className="mt-2 flex flex-wrap gap-2">
-          {(options ?? []).map((o) => {
+          {options.map((o) => {
             const checked = selected.includes(o);
             return (
               <label
@@ -145,11 +187,6 @@ function FieldRenderer({
               </label>
             );
           })}
-          {!options?.length && (
-            <span className="text-xs text-slate-500">
-              Aucune option définie pour ce jeu.
-            </span>
-          )}
         </div>
       </fieldset>
     );

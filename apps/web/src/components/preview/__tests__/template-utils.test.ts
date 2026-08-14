@@ -5,6 +5,8 @@ import {
   resolveFont,
   formatLabel,
   formatValue,
+  isEmptyValue,
+  resolveFieldLabel,
 } from "@/components/preview/template-utils";
 import type { ThemeConfig } from "@gamer-cv/types";
 
@@ -96,6 +98,36 @@ describe("template-utils", () => {
     });
     it("renders NaN (empty number input) as an em dash, not 'NaN'", () => {
       expect(formatValue(NaN)).toBe("—");
+    });
+  });
+
+  describe("isEmptyValue", () => {
+    it("flags null, undefined, empty string, NaN, empty array", () => {
+      expect(isEmptyValue(null)).toBe(true);
+      expect(isEmptyValue(undefined)).toBe(true);
+      expect(isEmptyValue("")).toBe(true);
+      expect(isEmptyValue(NaN)).toBe(true);
+      expect(isEmptyValue([])).toBe(true);
+    });
+    it("does NOT flag populated values (incl. 0, false, non-empty array)", () => {
+      expect(isEmptyValue(0)).toBe(false);
+      expect(isEmptyValue("Diamant")).toBe(false);
+      expect(isEmptyValue(800)).toBe(false);
+      expect(isEmptyValue(["Jett"])).toBe(false);
+    });
+  });
+
+  describe("resolveFieldLabel", () => {
+    it("uses the module's curated label when the field is known", () => {
+      const fields = [
+        { key: "kdRatio", label: "Ratio K/D" },
+        { key: "hours", label: "Heures" },
+      ];
+      expect(resolveFieldLabel("kdRatio", fields)).toBe("Ratio K/D");
+    });
+    it("falls back to camelCase humanization for unknown keys / no fields", () => {
+      expect(resolveFieldLabel("headshotPercent", [])).toBe("Headshot Percent");
+      expect(resolveFieldLabel("headshotPercent", undefined)).toBe("Headshot Percent");
     });
   });
 });

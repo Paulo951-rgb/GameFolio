@@ -12,9 +12,8 @@ export const EscapeFromTarkov = defineGame({
   icon: "/icons/tarkov.svg",
   modules: ["weaponbased", "survival"],
   gameData: {
-    ranks: [],
     roles: ["PMC USEC", "PMC BEAR", "Scav"],
-    characters: [],
     weapons: ["M4A1", "AK-74M", "HK 416", "ADAR 2-15", "VDV Mangler", "MP5", "Saiga-12", "Mosin"],
+    survivalFocus: ["Extraction", "Loot", "Hideout", "Quêtes", "PvP", "Boss"],
   },
 });

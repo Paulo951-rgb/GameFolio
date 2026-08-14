@@ -37,12 +37,18 @@ export function ShareModal({ open, onClose }: { open: boolean; onClose: () => vo
     setBusy(true);
     setError(null);
     try {
-      const profile = useEditorStore.getState().profile;
-      const res = await fetch("/api/profiles", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profile),
-      });
+      const { profile, cloudProfileId } = useEditorStore.getState();
+      // Reuse the existing cloud row when present (PATCH) instead of creating a
+      // new profile each time the modal opens (was: always POST → duplicates).
+      const id = cloudProfileId;
+      const res = await fetch(
+        id ? `/api/profiles/${id}` : "/api/profiles",
+        {
+          method: id ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(profile),
+        },
+      );
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         if (data.error === "INVALID_PROFILE") {
@@ -52,8 +58,13 @@ export function ShareModal({ open, onClose }: { open: boolean; onClose: () => vo
         }
         return;
       }
-      const { id } = (await res.json()) as { id: string };
-      setProfileId(id);
+      let savedId = id;
+      if (!savedId) {
+        const created = (await res.json()) as { id: string };
+        savedId = created.id;
+        useEditorStore.getState().setCloudProfileId(savedId);
+      }
+      setProfileId(savedId);
     } catch {
       setError("Impossible de sauvegarder le profil.");
     } finally {
