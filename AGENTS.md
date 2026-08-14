@@ -199,6 +199,42 @@ domain packages — no per-game UI code anywhere.
 - One template (`MinimalistTemplate`) ships to validate the template engine.
 - `GET /api/games/search?q=` — thin server wrapper over the static registry.
 
+## What exists now (Phase 5 — Accounts, cloud profiles, sharing)
+
+Local-first remains the default; cloud is opt-in behind a session.
+
+- **DB**: Prisma + SQLite (local dev). Schema in `prisma/schema.prisma`
+  (`User`, `GamerProfile`, `ProfileGame`, `ProfileVersion`). Game-specific data
+  lives in `moduleData JSONB`, validated at the app layer by the composite
+  module schema — never per-game SQL columns. Use `pnpm db:push` (no migrations
+  for MVP). `.npmrc` hoists `*prisma*` (pnpm + Prisma generator workaround).
+  `apps/web/src/lib/db.ts` is the singleton Prisma client.
+- **Auth** (`apps/web/src/lib/auth.ts`): scrypt password hashing + HMAC-signed
+  stateless session tokens (`<userId>.<hmac>`, secret = `AUTH_SECRET` env, ≥16
+  chars). Cookie `session` (httpOnly, SameSite=Lax). No NextAuth dependency.
+  Routes: `/api/auth/{register,login,logout,me}`. `/login` & `/register` pages
+  share `AuthForm`; `useSession` hook + `HomeNav` adapt UI to auth state.
+- **Cloud profiles**: `/api/profiles` (list/create), `/api/profiles/[id]`
+  (get/patch/delete). `apps/web/src/lib/profile-mapper.ts` maps
+  `GamerProfile`↔Prisma rows (`profileToCreateData` includes userId,
+  `profileToUpdateData` omits it — ownership is immutable post-create; uses
+  `Prisma.JsonNull` for cleared JSON fields). Anon→401, foreign profile→403.
+- **Sharing**: `/api/share/[id]` toggles `isPublic` + mints/revokes a `slug`
+  (`apps/web/src/lib/slug.ts`, 10-char nanoid, retried on collision; revoking
+  nulls the slug). `/cv/[slug]` is a server component that runs
+  `normalizeProfile` (visibility engine) so `hidden`/`private` fields never reach
+  the public page — e.g. age="hidden" is stripped server-side. QR code via the
+  `qrcode` lib (server `PublicQRCode` + client `ShareModal`). OG/Twitter meta
+  set dynamically (og:image PNG preview not yet wired — needs export render).
+- **ShareModal** (`apps/web/src/components/share/ShareModal.tsx`): save-to-cloud
+  → toggle public → copy link → QR. Maps `INVALID_PROFILE` (422) to a helpful
+  "fill at least the gamerTag" message. `PreviewStep` gained Share + Save buttons
+  (Save visible only when logged in).
+- **Dashboard** (`/dashboard`): lists the user's cloud profiles, loads one into
+  the editor via `store.loadCloudProfile`.
+- Tests: 18 new (auth 9 incl. token sign/verify/tamper + password hash;
+  profile-mapper 6; slug 3). Full web suite 41 green. Build: 20 routes.
+
 ## Conventions
 
 - Source-only TS packages: `main`/`types` point at `src/*.ts` (consumed

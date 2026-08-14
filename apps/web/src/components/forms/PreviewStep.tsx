@@ -1,13 +1,30 @@
 "use client";
 
+import { useState } from "react";
 import { useEditorStore } from "@/lib/store";
 import { LivePreviewPane } from "@/components/preview/LivePreviewPane";
 import { AIGeneratePanel } from "@/components/ai/AIGeneratePanel";
 import { ExportMenu } from "@/components/export/ExportMenu";
+import { ShareModal } from "@/components/share/ShareModal";
+import { useSession } from "@/lib/useSession";
 
 export function PreviewStep() {
   const reset = useEditorStore((s) => s.reset);
   const games = useEditorStore((s) => s.profile.games);
+  const [shareOpen, setShareOpen] = useState(false);
+  const { user } = useSession();
+
+  async function saveToCloud() {
+    const profile = useEditorStore.getState().profile;
+    const res = await fetch("/api/profiles", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(profile),
+    });
+    if (res.ok) {
+      alert("Profil sauvegardé dans le cloud. Retrouvez-le dans votre tableau de bord.");
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -39,6 +56,27 @@ export function PreviewStep() {
 
       <AIGeneratePanel />
       <ExportMenu />
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setShareOpen(true)}
+          className="rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500"
+        >
+          Partager
+        </button>
+        {user && (
+          <button
+            type="button"
+            onClick={() => void saveToCloud()}
+            className="rounded-md border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800"
+          >
+            Sauvegarder dans le cloud
+          </button>
+        )}
+      </div>
+
+      <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} />
 
       <div className="lg:hidden">
         <LivePreviewPane />

@@ -9,9 +9,16 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
-    "lint": "pnpm -r lint"
+    "lint": "pnpm -r lint",
+    "db:migrate": "PRISMA_SKIP_POSTINSTALL_GENERATE=true prisma migrate dev",
+    "db:generate": "PRISMA_SKIP_POSTINSTALL_GENERATE=true prisma generate",
+    "db:push": "PRISMA_SKIP_POSTINSTALL_GENERATE=true prisma db push",
+    "db:seed": "PRISMA_SKIP_POSTINSTALL_GENERATE=true prisma db seed"
   },
   "devDependencies": {
+    "@prisma/client": "^6.19.3",
+    "prisma": "^6.19.3",
+    "tsx": "^4.19.2",
     "typescript": "^5.5.4"
   }
 }

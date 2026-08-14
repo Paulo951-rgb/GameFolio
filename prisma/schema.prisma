@@ -1,0 +1,61 @@
+// Gamer CV — Prisma schema (architecture §4).
+//
+// Datasource: SQLite for local/dev (no external server needed, fully testable
+// in this environment). Production swaps the provider to "postgresql" — that's
+// the only change; Json columns (stored as TEXT in SQLite) map to native
+// JSONB on Postgres, and the heterogeneous per-game moduleData keeps working.
+// This is the same portability argument the doc makes for an Electron build
+// (§1: "PostgreSQL cloud → SQLite local").
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  // scrypt-derived verifier (Node crypto.scrypt), never the raw password.
+  passwordHash String
+  createdAt DateTime @default(now())
+  profiles  GamerProfile[]
+}
+
+model GamerProfile {
+  id            String   @id @default(cuid())
+  userId        String?  // null = anonymous/local-first profile
+  slug          String?  @unique // public share slug, distinct from id, regenerable
+  isPublic      Boolean  @default(false)
+  personalInfo  Json     // pseudo, pays, langues, réseaux, visibility per field
+  playerTypes   Json     // string[] — stored as Json (SQLite has no scalar-list support)
+  templateId    String
+  themeConfig   Json
+  generatedText Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  games         ProfileGame[]
+  versions      ProfileVersion[]
+}
+
+model ProfileGame {
+  id         String       @id @default(cuid())
+  profileId  String
+  gameId     String
+  moduleData Json
+  freeText   String?
+  order      Int
+  profile    GamerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model ProfileVersion {
+  id        String       @id @default(cuid())
+  profileId String
+  snapshot  Json
+  createdAt DateTime     @default(now())
+  profile   GamerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}

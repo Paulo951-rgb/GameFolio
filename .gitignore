@@ -27,3 +27,10 @@ coverage/
 *.log
 npm-debug.log*
 pnpm-debug.log*
+
+# Prisma — generated client + local SQLite db + migrations artifacts
+prisma/dev.db
+prisma/dev.db-journal
+prisma/prisma/
+node_modules/.prisma/
+prisma/migrations/*/migration.sql.bak
