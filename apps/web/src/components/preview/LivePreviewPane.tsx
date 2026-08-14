@@ -2,9 +2,8 @@
 
 import { useMemo } from "react";
 import { useEditorStore } from "@/lib/store";
-import { filterPersonalInfo, filterGameEntry } from "@gamer-cv/core";
+import { normalizeProfile } from "@/lib/normalize";
 import { MinimalistTemplate } from "./MinimalistTemplate";
-import type { NormalizedCVData } from "@gamer-cv/types";
 
 /**
  * LivePreviewPane — subscribes to the editor store, builds the normalized
@@ -15,19 +14,7 @@ import type { NormalizedCVData } from "@gamer-cv/types";
 export function LivePreviewPane() {
   const profile = useEditorStore((s) => s.profile);
 
-  const data = useMemo<NormalizedCVData>(() => {
-    const personalInfo = filterPersonalInfo(profile.personalInfo);
-    const games = profile.games
-      .filter((g) => g.gameId !== "")
-      .map((g) => filterGameEntry(g, profile.personalInfo.visibility))
-      .filter((g): g is NonNullable<typeof g> => g !== null);
-    return {
-      personalInfo,
-      playerTypes: profile.playerTypes,
-      games,
-      generated: profile.generatedText,
-    };
-  }, [profile]);
+  const data = useMemo(() => normalizeProfile(profile), [profile]);
 
   return (
     <div className="h-full overflow-auto rounded-lg bg-slate-900/50 p-4">

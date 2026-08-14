@@ -9,6 +9,7 @@ import type {
   GameEntry,
   ThemeConfig,
   FieldVisibility,
+  GeneratedText,
 } from "@gamer-cv/types";
 
 const STORAGE_KEY = "gamer-cv:current-profile";
@@ -38,6 +39,11 @@ export interface EditorState {
   profile: GamerProfile;
   currentStep: number;
   hydrated: boolean;
+  /** Facts the anti-hallucination check flagged as "à vérifier". */
+  flaggedFacts: string[];
+  /** True while an AI generation request is in flight. */
+  isGenerating: boolean;
+  generationError: string | null;
   setPersonalInfo: (patch: Partial<PersonalInfo>) => void;
   setPlayerTypes: (types: string[]) => void;
   setGameCount: (n: number) => void;
@@ -53,6 +59,10 @@ export interface EditorState {
   prevStep: () => void;
   reset: () => void;
   hydrate: () => Promise<void>;
+  setGeneratedText: (text: GeneratedText) => void;
+  setFlaggedFacts: (facts: string[]) => void;
+  setGenerating: (v: boolean) => void;
+  setGenerationError: (msg: string | null) => void;
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -69,6 +79,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   profile: makeDefaultProfile(),
   currentStep: 0,
   hydrated: false,
+  flaggedFacts: [],
+  isGenerating: false,
+  generationError: null,
 
   setPersonalInfo: (patch) => {
     const profile = {
@@ -180,7 +193,13 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   reset: () => {
     const profile = makeDefaultProfile();
-    set({ profile, currentStep: 0 });
+    set({
+      profile,
+      currentStep: 0,
+      flaggedFacts: [],
+      isGenerating: false,
+      generationError: null,
+    });
     void idbDel(STORAGE_KEY);
   },
 
@@ -193,4 +212,18 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       set({ hydrated: true });
     }
   },
+
+  setGeneratedText: (text) => {
+    const profile = { ...get().profile, generatedText: text };
+    set({ profile });
+    scheduleSave(profile);
+  },
+
+  setFlaggedFacts: (facts) => set({ flaggedFacts: facts }),
+  setGenerating: (v) =>
+    set((s) => ({
+      isGenerating: v,
+      generationError: v ? null : s.generationError,
+    })),
+  setGenerationError: (msg) => set({ generationError: msg }),
 }));

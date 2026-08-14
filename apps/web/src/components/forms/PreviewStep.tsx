@@ -2,6 +2,7 @@
 
 import { useEditorStore } from "@/lib/store";
 import { LivePreviewPane } from "@/components/preview/LivePreviewPane";
+import { AIGeneratePanel } from "@/components/ai/AIGeneratePanel";
 
 export function PreviewStep() {
   const reset = useEditorStore((s) => s.reset);
@@ -13,7 +14,7 @@ export function PreviewStep() {
         <div>
           <h2 className="text-lg font-semibold">Aperçu final</h2>
           <p className="mt-1 text-sm text-slate-400">
-            Voici votre Gamer CV. La génération IA et l’export arrivent en phase 2-3.
+            Génère le texte de ton CV, ajuste-le, puis exporte-le (export en phase 3).
           </p>
         </div>
         <button
@@ -34,6 +35,8 @@ export function PreviewStep() {
           Aucun jeu sélectionné. Revenez à l’étape « Jeux » pour en ajouter.
         </p>
       )}
+
+      <AIGeneratePanel />
 
       <div className="lg:hidden">
         <LivePreviewPane />

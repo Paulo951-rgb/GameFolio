@@ -36,7 +36,7 @@ export type GeneratedText = z.infer<typeof GeneratedTextSchema>;
  * data is shown or how fields are selected.
  */
 export interface NormalizedCVData {
-  personalInfo: import("./profile.js").PersonalInfo;
+  personalInfo: import("./profile").PersonalInfo;
   playerTypes: string[];
   games: GameEntryPublic[];
   generated?: GeneratedText;

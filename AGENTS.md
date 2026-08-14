@@ -35,9 +35,9 @@ Monorepo (pnpm workspaces), pure-TS domain packages only (no React/Next yet):
 
 ```bash
 pnpm install          # corepack manages pnpm (11.x). COREPACK_ENABLE_DOWNLOAD_PROMPT=0 in CI.
-pnpm -r test         # vitest — 37 tests (26 core + 11 data), all green
+pnpm -r test         # vitest — 52 tests (26 core + 11 data + 3 services + 6 types + 6 web), all green
 pnpm -r typecheck    # tsc --noEmit across packages, all green
-pnpm -r build        # tsc --noEmit (packages are TS-source-only for now)
+pnpm -r build        # tsc --noEmit (packages) + next build (apps/web)
 ```
 
 `pnpm-workspace.yaml` sets `verifyDepsBeforeRun: false` and `onlyBuiltDependencies:
@@ -61,9 +61,46 @@ under `onlyBuiltDependencies`.
 ## Next phases (per design doc)
 
 - ~~Phase 1 — Wizard UI~~ DONE (see below).
-- Phase 2 — AI provider adapter (Anthropic first) behind `AIProvider`.
+- ~~Phase 2 — AI provider adapter (Anthropic first) behind `AIProvider`~~ DONE (see below).
 - Phase 3 — headless server render (Playwright) for pixel-perfect PDF/image.
 - Phase 4+ — more templates, accounts/cloud, public sharing, scale catalogue.
+
+## What exists now (Phase 2 — Génération IA)
+
+- `packages/services/src/ai/` — provider-agnostic `AIProvider` interface +
+  adapters: `AnthropicProvider` (real, `@anthropic-ai/sdk`), `MockProvider`
+  (deterministic, offline — uses lowercase formulations so `verifyFacts` does
+  not false-positive on common French capitalized words). `createAIProvider()`
+  factory picks by `AI_PROVIDER` env (`mock` default → never calls an external
+  API in tests/dev; `anthropic` requires `ANTHROPIC_API_KEY`).
+- The anti-hallucination pipeline from `packages/core/generation` is wired end
+  to end: input is visibility-filtered + empty-stripped, `SYSTEM_PROMPT` forbids
+  inventing facts, output validated against `GeneratedTextSchema`, then
+  `verifyFacts` extracts numbers/proper nouns from the generated text and flags
+  any absent from the input. `flaggedFacts` flows to the client for review.
+- API routes (thin HTTP layer, no business logic in the handlers):
+  - `POST /api/generate` — full generation from a profile.
+  - `POST /api/regenerate` — regen with a free-text instruction ("plus court",
+    "ne parle pas de mon âge"); sends prior text + raw data + instruction,
+    always re-applies the anti-invention constraints. Returns a fresh full
+    `GeneratedText`, never a text patch.
+  - Both re-validate the request body with the shared Zod schemas
+    (`apiSchemas.ts`) — never trust client data. Shared generation logic lives
+    in `apps/web/src/lib/generation.ts` so the two routes stay DRY.
+- Rate limiting (`apps/web/src/lib/rateLimit.ts`): token-bucket per client IP
+  (capacity 5, refill 1/s) on generate + regenerate. Returns 429 with
+  `Retry-After`. Tested in `apps/web/src/lib/__tests__/rateLimit.test.ts`.
+- Store extended (`store.ts`) with `generatedText`, `flaggedFacts`,
+  `isGenerating`, `generationError`, and generation actions that call the API
+  routes via fetch.
+- `AIGeneratePanel` (`apps/web/src/components/ai/`) — triggers generation,
+  shows loading, renders the structured result (summary / strengths / perGame)
+  with the `flaggedFacts` review banner, and exposes the regenerate instruction
+  input. Wired into `PreviewStep` (the natural home — preview + AI + export flow).
+- `apps/web/src/lib/normalize.ts` — shared `normalizeProfile` used by both
+  `LivePreviewPane` and the (future) export render, so preview === export.
+- `next.config.mjs` lists `@gamer-cv/services` in `transpilePackages` (it ships
+  TS source + the anthropic SDK, both must be transpiled by Next).
 
 ## What exists now (Phase 1 — Wizard sans IA)
 
