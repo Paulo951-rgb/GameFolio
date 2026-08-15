@@ -272,6 +272,58 @@ domain packages — no per-game UI code anywhere.
   - Tests: `normalize.test.ts` (10) pin the exact crash shape + empty
     specializations + incomplete AI response + all array fields non-undefined.
 
+## What exists now (Reliability audit — export/render correctness + hardening)
+
+Five concrete bugs found by full A-to-Z audit, all fixed (build + 157 tests green).
+
+- **Export canvas background (CRITICAL visual bug)** — the isolated `/export`
+  render page forced `bg-white text-slate-900` on the CV wrapper, so EVERY dark
+  template (Minimalist/Gaming/Néon/Tech/Creator) exported sitting on a white
+  card with white A4 margins around it — nothing like the live preview (broke
+  the WYSIWYG contract). Same mismatch on the public `/cv/[slug]` page (global
+  dark bg behind a white Classique CV). Fix:
+  - New server-safe module `apps/web/src/components/preview/template-themes.ts`
+    (NO "use client") — single source of truth for each template's default
+    `{primary,accent,bg,text}` + `resolveTemplateBackground(theme)` (user
+    `backgroundColor` override wins, else template default). `templates.tsx`
+    now derives its `defaultTheme` from this module (no duplicated hex values).
+  - `/export` page resolves the canvas bg via `resolveTemplateBackground` and
+    paints the root `<div>` + `--cv-bg` CSS var with it. Print CSS
+    (`@media print` in `globals.css`) flattens template card chrome
+    (rounded corners + drop shadow) so the PDF is edge-to-edge. Verified:
+    Minimalist/Gaming export dark-on-dark, Classique white-on-white.
+  - **Why a separate module**: a plain FUNCTION exported from a `"use client"`
+    module becomes a non-callable client reference when imported into a server
+    component — importing `resolveTemplateBackground` from `templates.tsx` into
+    the server `/cv/[slug]` page crashed it with `TypeError: h is not a
+    function`. `template-themes.ts` has no `"use client"` so it's safely
+    callable server-side. (Components like `CVTemplate` are fine to import from
+    a `"use client"` module into a server component — that's the normal
+    server→client boundary; only plain functions break.)
+- **Reorder staleness (GameEntryStep)** — game cards used `key={index}`, so
+  moving a game up/down kept the RHF form instance bound to the *position*
+  while passing the new game's `values` prop → uncontrolled registered inputs
+  showed the stale game's data until the user typed. Fixed with
+  `key={entry.gameId || \`empty-${index}\`}` so the form instance travels with
+  its game across reorders.
+- **`/api/og/[slug]` unguarded** — every OG-image request spawns a headless
+  browser (expensive) with NO rate limit → trivial DoS. Added per-IP
+  `rateLimit(\`og:${ip}\`, {capacity:5, refillRate:0.1})` + 429/Retry-After.
+  (`Cache-Control` lets a CDN absorb repeated crawls, but without one every hit
+  renders — the limiter caps that cost.)
+- **rateLimit memory leak** — the `buckets` Map grew one entry per distinct
+  IP/route forever. Added `sweepIfNeeded`: every 30 min, drop buckets untouched
+  for 30 min (re-created at full capacity on next request). O(1) amortized.
+- **Empty placeholder game rows persisted** — the wizard creates
+  `gameId: ""` entries when the user bumps the game count before picking a
+  title; `gamesToNestedCreate` wrote them to the DB as dead rows (and inflated
+  the dashboard game count). Now filters `gameId === ""` and re-indexes
+  `order` contiguously (0..n-1) so sort stays stable.
+- Tests added: `template-themes.test.ts` (6 — id set, non-empty colors, map
+  parity, default bg per template incl. Classique=white, override wins,
+  unknown-id fallback), `profile-mapper.test.ts` +1 (placeholder filter +
+  re-index). Web suite 68→74.
+
 ## What exists now (Phase 5 — Accounts, cloud profiles, sharing)
 
 Local-first remains the default; cloud is opt-in behind a session.

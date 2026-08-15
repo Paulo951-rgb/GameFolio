@@ -11,6 +11,7 @@ import {
   resolveFieldLabel,
 } from "./template-utils";
 import { GeneratedSections } from "./GeneratedSections";
+import { BadgesRow, AchievementsList, BioLine, type SectionTheme } from "./ProfileSections";
 
 /**
  * Néon template — cyberpunk, glowing text/edges on near-black. Bold and high
@@ -31,8 +32,15 @@ export function NeonTemplate({
   });
   const s = spacing(theme);
   const font = resolveFont(theme, "'JetBrains Mono', ui-monospace, monospace");
-  const { personalInfo: p, playerTypes, games, generated } = data;
+  const { personalInfo: p, playerTypes, games, badges, achievements, generated } = data;
   const glow = `0 0 8px ${c.primary}, 0 0 16px ${c.primary}55`;
+
+  const sectionTheme: SectionTheme = {
+    primary: c.accent,
+    text: c.text,
+    headingClass: `mb-2 ${s.text} font-bold uppercase tracking-[0.2em]`,
+    sectionClass: s.section,
+  };
 
   return (
     <div
@@ -59,6 +67,7 @@ export function NeonTemplate({
             ))}
           </div>
         )}
+        <BioLine bio={p.bio} />
       </header>
 
       {playerTypes.length > 0 && (
@@ -79,6 +88,8 @@ export function NeonTemplate({
           </div>
         </section>
       )}
+
+      <BadgesRow badges={badges} t={sectionTheme} />
 
       {generated && (
         <GeneratedSections
@@ -138,6 +149,8 @@ export function NeonTemplate({
       {games.length === 0 && !generated && (
         <p className="py-12 text-center text-sm opacity-40">// Votre aperçu apparaîtra ici.</p>
       )}
+
+      <AchievementsList achievements={achievements} t={sectionTheme} />
     </div>
   );
 }

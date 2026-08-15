@@ -11,6 +11,7 @@ import {
   resolveFieldLabel,
 } from "./template-utils";
 import { GeneratedSections } from "./GeneratedSections";
+import { BadgesRow, AchievementsList, BioLine, type SectionTheme } from "./ProfileSections";
 
 /**
  * Gaming template — dark, bold, neon-accented. Aimed at competitive/streamer
@@ -31,7 +32,14 @@ export function GamingTemplate({
   });
   const s = spacing(theme);
   const font = resolveFont(theme, "Inter, sans-serif");
-  const { personalInfo: p, playerTypes, games, generated } = data;
+  const { personalInfo: p, playerTypes, games, badges, achievements, generated } = data;
+
+  const sectionTheme: SectionTheme = {
+    primary: c.accent,
+    text: c.text,
+    headingClass: `mb-2 ${s.text} font-bold uppercase tracking-widest`,
+    sectionClass: s.section,
+  };
 
   return (
     <div
@@ -58,6 +66,7 @@ export function GamingTemplate({
             ))}
           </div>
         )}
+        <BioLine bio={p.bio} />
       </header>
 
       {playerTypes.length > 0 && (
@@ -78,6 +87,8 @@ export function GamingTemplate({
           </div>
         </section>
       )}
+
+      <BadgesRow badges={badges} t={sectionTheme} />
 
       {generated && (
         <GeneratedSections
@@ -136,6 +147,8 @@ export function GamingTemplate({
       {games.length === 0 && !generated && (
         <p className="py-12 text-center text-sm opacity-40">Votre aperçu apparaîtra ici.</p>
       )}
+
+      <AchievementsList achievements={achievements} t={sectionTheme} />
     </div>
   );
 }

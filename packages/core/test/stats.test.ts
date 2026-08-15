@@ -9,6 +9,7 @@ function makeProfile(games: GamerProfile["games"], playerTypes: string[] = []): 
     personalInfo: { gamerTag: "X", visibility: {} },
     playerTypes,
     games,
+    achievements: [],
     templateId: "minimalist",
     themeConfig: { templateId: "minimalist" },
   };

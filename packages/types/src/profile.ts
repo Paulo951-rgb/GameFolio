@@ -22,6 +22,8 @@ export type VisibilityMap = z.infer<typeof VisibilityMapSchema>;
 export const PersonalInfoSchema = z.object({
   gamerTag: z.string().min(1),
   firstName: z.string().optional(),
+  /** Free-form player bio shown in the profile header (additive, optional). */
+  bio: z.string().optional(),
   age: z.number().int().positive().optional(),
   country: z.string().optional(),
   languages: z.array(z.string()).optional(),

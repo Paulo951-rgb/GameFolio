@@ -55,6 +55,7 @@ export async function PATCH(req: Request, ctx: { params: { id: string } }) {
         ...profileToUpdateData({
           personalInfo: p.personalInfo,
           playerTypes: p.playerTypes,
+          achievements: p.achievements,
           templateId: p.templateId,
           themeConfig: p.themeConfig,
           generatedText: p.generatedText,

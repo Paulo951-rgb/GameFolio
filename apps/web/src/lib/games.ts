@@ -1,5 +1,3 @@
-"use client";
-
 import {
   gameRegistry,
   moduleRegistry,
@@ -12,6 +10,23 @@ export { gameRegistry, moduleRegistry, searchGames };
 
 export function getGame(id: string): GameDefinition | undefined {
   return gameRegistry.get(id);
+}
+
+/** All games in the static catalogue (a stable array, read-only consumers). */
+export function allGames(): GameDefinition[] {
+  return Array.from(gameRegistry.values());
+}
+
+/**
+ * Client-side search convenience wrapper over the data package's searchGames:
+ * runs the full exact→starts→includes→genre→platform→fuzzy pipeline over the
+ * whole catalogue and returns up to `limit` matches. Used by the game picker
+ * + the achievements "link a game" combobox so the UI never loads the full
+ * catalogue up front when a query is present.
+ */
+export function gameSearchResults(query: string, limit = 20): GameDefinition[] {
+  if (!query.trim()) return allGames().slice(0, limit);
+  return searchGames(query.trim(), limit);
 }
 
 export function getResolvedGame(id: string) {

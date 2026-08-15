@@ -11,6 +11,7 @@ import {
   resolveFieldLabel,
 } from "./template-utils";
 import { GeneratedSections } from "./GeneratedSections";
+import { BadgesRow, AchievementsList, BioLine, type SectionTheme } from "./ProfileSections";
 
 /**
  * Classique template — clean white background, serif type, professional résumé
@@ -31,7 +32,14 @@ export function ClassiqueTemplate({
   });
   const s = spacing(theme);
   const font = resolveFont(theme, "Georgia, 'Times New Roman', serif");
-  const { personalInfo: p, playerTypes, games, generated } = data;
+  const { personalInfo: p, playerTypes, games, badges, achievements, generated } = data;
+
+  const sectionTheme: SectionTheme = {
+    primary: c.accent,
+    text: c.text,
+    headingClass: `mb-2 ${s.text} font-semibold uppercase tracking-wider border-b pb-1`,
+    sectionClass: s.section,
+  };
 
   return (
     <div
@@ -55,6 +63,7 @@ export function ClassiqueTemplate({
             ))}
           </div>
         )}
+        <BioLine bio={p.bio} />
       </header>
 
       {playerTypes.length > 0 && (
@@ -65,6 +74,8 @@ export function ClassiqueTemplate({
           <p className={`${s.text} opacity-80`}>{playerTypes.join(" · ")}</p>
         </section>
       )}
+
+      <BadgesRow badges={badges} t={sectionTheme} />
 
       {generated && (
         <GeneratedSections
@@ -120,6 +131,8 @@ export function ClassiqueTemplate({
       {games.length === 0 && !generated && (
         <p className="py-12 text-center text-sm opacity-40">Votre aperçu apparaîtra ici.</p>
       )}
+
+      <AchievementsList achievements={achievements} t={sectionTheme} />
     </div>
   );
 }

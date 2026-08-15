@@ -1,13 +1,16 @@
 import {
   filterPersonalInfo,
   filterGameEntry,
+  computeBadges,
 } from "@gamer-cv/core";
 import {
   GeneratedTextSchema,
   type GamerProfile,
   type GeneratedText,
   type NormalizedCVData,
+  type Achievement,
 } from "@gamer-cv/types";
+import { gameRegistry } from "@/lib/games";
 
 /**
  * Build the visibility-filtered, normalized view of a profile. This is the
@@ -20,6 +23,12 @@ import {
  *
  * Private/hidden fields never survive this call, guaranteeing they can't reach
  * the AI prompt or the public page.
+ *
+ * Badges are computed from the REAL profile data here (never fabricated) so
+ * every render surface shows the same earned badges. Achievements are passed
+ * through as-is (they're user-asserted facts, not auto-derived); a hidden
+ * achievement is currently still shown — achievements are opt-in by the player
+ * adding them, so there's no per-achievement visibility map for the MVP.
  */
 export function normalizeProfile(profile: GamerProfile): NormalizedCVData {
   const personalInfo = filterPersonalInfo(profile.personalInfo);
@@ -27,10 +36,14 @@ export function normalizeProfile(profile: GamerProfile): NormalizedCVData {
     .filter((g) => g.gameId !== "")
     .map((g) => filterGameEntry(g, profile.personalInfo.visibility))
     .filter((g): g is NonNullable<typeof g> => g !== null);
+  const badges = computeBadges(profile, gameRegistry);
+  const achievements = (profile.achievements ?? []) as Achievement[];
   return {
     personalInfo,
     playerTypes: profile.playerTypes,
     games,
+    badges,
+    achievements,
     // Normalize generatedText so its array/object fields are real arrays/objects
     // (never undefined) even when the source is an older Prisma JSON column or a
     // stale IndexedDB blob. This protects the server-side render paths

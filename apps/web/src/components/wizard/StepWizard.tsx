@@ -43,19 +43,19 @@ export function StepWizard({
   return (
     <div className="flex h-full flex-col">
       <div className="mb-6">
-        <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
+        <div className="mb-2 flex items-center justify-between text-xs text-content-muted">
           <span>
             Étape {current + 1} / {steps.length}
           </span>
           <span>{Math.round(progress)}%</span>
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
           <div
-            className="h-full rounded-full bg-violet-500 transition-all"
+            className="h-full rounded-full bg-accent transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
-        <ol className="mt-3 hidden grid-cols-6 gap-2 sm:grid">
+        <ol className="mt-3 hidden gap-2 sm:grid sm:grid-cols-6">
           {steps.map((s, i) => (
             <li key={s.id}>
               <button
@@ -63,10 +63,10 @@ export function StepWizard({
                 onClick={() => onStepChange(i)}
                 className={`w-full truncate rounded-md px-2 py-1 text-left text-xs transition ${
                   i === current
-                    ? "bg-violet-600/30 text-violet-200"
+                    ? "bg-accent/15 text-accent"
                     : i < current
-                      ? "text-slate-400 hover:text-slate-200"
-                      : "text-slate-600"
+                      ? "text-content-secondary hover:text-content-primary"
+                      : "text-content-muted"
                 }`}
               >
                 {s.label}
@@ -83,7 +83,7 @@ export function StepWizard({
           type="button"
           onClick={() => current > 0 && onStepChange(current - 1)}
           disabled={current === 0}
-          className="rounded-md border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+          className="btn btn-ghost px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40"
         >
           ← Précédent
         </button>
@@ -91,7 +91,7 @@ export function StepWizard({
           type="button"
           onClick={handleNext}
           disabled={current === steps.length - 1}
-          className="rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
+          className="btn btn-primary px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40"
         >
           Suivant →
         </button>

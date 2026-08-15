@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { dbProfileToProfile } from "@/lib/profile-mapper";
 import { encodeProfileParam } from "@/app/export/encode";
 import { createExportService } from "@gamer-cv/services/export";
+import { rateLimit, getClientIp } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,11 +16,25 @@ export const dynamic = "force-dynamic";
  * headless exporter as the download export (architecture §8 + §9: og:image =
  * export PNG of the CV). Returns image/png, cached briefly. Non-public or
  * unknown slugs 404 (don't reveal existence), mirroring /cv/[slug].
+ *
+ * Rate-limited per IP: each request spawns a headless browser (expensive), so
+ * an unguarded endpoint could be abused to DoS the server. The Cache-Control
+ * header lets a CDN absorb repeated crawls, but without a CDN every hit renders
+ * — the limiter caps that cost.
  */
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: { slug: string } },
 ) {
+  const ip = getClientIp(req.headers);
+  const rl = rateLimit(`og:${ip}`, { capacity: 5, refillRate: 0.1 });
+  if (!rl.ok) {
+    return new NextResponse(null, {
+      status: 429,
+      headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) },
+    });
+  }
+
   const row = await prisma.gamerProfile.findUnique({
     where: { slug: params.slug },
     include: { games: true },

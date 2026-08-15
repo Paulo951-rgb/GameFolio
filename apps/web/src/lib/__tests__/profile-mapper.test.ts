@@ -89,6 +89,21 @@ describe("gamesToNestedCreate", () => {
     });
     expect(mapped[1].freeText).toBeNull();
   });
+
+  it("drops empty placeholder entries (gameId='') and re-indexes order", () => {
+    // The wizard can create placeholder rows (gameId="") when the user bumps the
+    // game count before picking a title. These must never be persisted — they'd
+    // inflate the dashboard game count and store dead rows.
+    const withPlaceholder: GameEntry[] = [
+      { gameId: "valorant", moduleData: { hours: 10 }, order: 0 },
+      { gameId: "", moduleData: {}, order: 1 },
+      { gameId: "minecraft", moduleData: { hours: 5 }, order: 2 },
+    ];
+    const mapped = gamesToNestedCreate(withPlaceholder);
+    expect(mapped.map((g) => g.gameId)).toEqual(["valorant", "minecraft"]);
+    // Orders are re-indexed contiguously after the filter.
+    expect(mapped.map((g) => g.order)).toEqual([0, 1]);
+  });
 });
 
 describe("dbProfileToProfile / dbGamesToEntries", () => {
