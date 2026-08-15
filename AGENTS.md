@@ -35,7 +35,7 @@ Monorepo (pnpm workspaces), pure-TS domain packages only (no React/Next yet):
 
 ```bash
 pnpm install          # corepack manages pnpm (11.x). COREPACK_ENABLE_DOWNLOAD_PROMPT=0 in CI.
-pnpm -r test         # vitest — 139 tests (45 core + 18 data + 5 services + 6 types + 65 web), all green
+pnpm -r test         # vitest — 144 tests (45 core + 18 data + 10 services + 6 types + 65 web), all green
 pnpm -r typecheck    # tsc --noEmit across packages, all green
 pnpm -r build        # tsc --noEmit (packages) + next build (apps/web)
 # Run the export route live:
@@ -152,11 +152,15 @@ if one is ever genuinely needed.
 ## What exists now (Phase 2 — Génération IA)
 
 - `packages/services/src/ai/` — provider-agnostic `AIProvider` interface +
-  adapters: `AnthropicProvider` (real, `@anthropic-ai/sdk`), `MockProvider`
+  adapters: `AnthropicProvider` (real, `@anthropic-ai/sdk`), `GeminiProvider`
+  (real, REST natif Google Gemini — **quasi gratuit**, zéro SDK, `AI_PROVIDER=gemini`
+  + `GEMINI_API_KEY`), `MockProvider`
   (deterministic, offline — uses lowercase formulations so `verifyFacts` does
   not false-positive on common French capitalized words). `createAIProvider()`
   factory picks by `AI_PROVIDER` env (`mock` default → never calls an external
-  API in tests/dev; `anthropic` requires `ANTHROPIC_API_KEY`).
+  API in tests/dev; `gemini` requires `GEMINI_API_KEY`; `anthropic` requires
+  `ANTHROPIC_API_KEY`). Prompt construction + JSON extraction shared via
+  `prompt.ts` (DRY between adapters).
 - The anti-hallucination pipeline from `packages/core/generation` is wired end
   to end: input is visibility-filtered + empty-stripped, `SYSTEM_PROMPT` forbids
   inventing facts, output validated against `GeneratedTextSchema`, then
