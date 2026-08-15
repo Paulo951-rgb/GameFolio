@@ -41,7 +41,7 @@ La génération du CV suit un vrai pipeline d'analyse : les données saisies son
 | Validation | Zod (schémas partagés client/serveur) |
 | Base de données | Prisma — **SQLite** en local/dev, **PostgreSQL** en production (JSONB pour les données hétérogènes par jeu) |
 | Export | Playwright/Puppeteer headless (rendu serveur = fidélité pixel-perfect avec l'aperçu) |
-| IA | Abstraction `AIProvider` : `mock` (offline, déterministe — par défaut) / `anthropic` (réel) |
+| IA | Abstraction `AIProvider` : `mock` (offline, déterministe — par défaut) / `anthropic` (réel) / `gemini` (réel, **quasi gratuit** via le free tier Google Gemini) |
 
 ---
 
@@ -122,15 +122,17 @@ Copier `.env.example` vers `.env` (à la racine) et renseigner :
 | Variable | Description | Requis |
 |---|---|---|
 | `DATABASE_URL` | Chaîne Prisma. `file:./db.db` (SQLite) en local, URL PostgreSQL en prod. | oui |
-| `AI_PROVIDER` | Fournisseur IA actif. `mock` (offline, déterministe) par défaut ; `anthropic` pour une vraie génération. | non (mock par défaut) |
+| `AI_PROVIDER` | Fournisseur IA actif. `mock` (offline, déterministe) par défaut ; `gemini` (réel, **quasi gratuit** — free tier Google Gemini) ; `anthropic` (réel, Claude). | non (mock par défaut) |
 | `ANTHROPIC_API_KEY` | Clé API Anthropic. Requis uniquement si `AI_PROVIDER=anthropic`. | pour la vraie IA |
 | `ANTHROPIC_MODEL` | Modèle Anthropic (défaut codé sinon). | optionnel |
+| `GEMINI_API_KEY` | Clé API Google Gemini. Requis si `AI_PROVIDER=gemini` (alias `GOOGLE_API_KEY`). Création gratuite sur <https://aistudio.google.com/app/apikey>. | pour la vraie IA |
+| `GEMINI_MODEL` | Modèle Gemini (défaut `gemini-2.0-flash`). | optionnel |
 | `AUTH_SECRET` | Secret de session pour l'auth (≥ 16 caractères). | pour les comptes |
 | `NEXT_PUBLIC_BASE_URL` | URL publique de base (pour les liens de partage / og:image). | pour le partage |
 | `EXPORT_BASE_URL` | URL de rendu isolé pour l'export PDF/image et og:image. **Source de confiance unique** (anti-SSRF) — par défaut `NEXT_PUBLIC_BASE_URL`, jamais les en-têtes `Host`/`x-forwarded-*` du client. | recommandé (prod) |
 | `PLAYWRIGHT_EXECUTABLE_PATH` | Chemin absolu vers un binaire Chromium si Playwright ne trouve pas le sien. | optionnel |
 
-> **Sans clé IA**, l'app fonctionne entièrement et la génération de CV utilise le **mode mock** (offline, déterministe) pour pouvoir tester tout le pipeline. Pour une vraie rédaction IA, passez `AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY`. L'UI affiche un bandeau de statut explicite (« Mode hors-ligne — Mock » vs « Anthropic (réel) ») — l'app ne prétend jamais faire de l'IA quand elle n'en fait pas. Le statut est aussi interrogable via `GET /api/ai/status`.
+> **Sans clé IA**, l'app fonctionne entièrement et la génération de CV utilise le **mode mock** (offline, déterministe) pour pouvoir tester tout le pipeline. Pour une vraie rédaction IA, deux options : `AI_PROVIDER=gemini` + `GEMINI_API_KEY` (recommandé — quasi gratuit, free tier Google Gemini, **aucune carte bancaire requise**) ou `AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY`. L'UI affiche un bandeau de statut explicite (« Mode hors-ligne — Mock » vs « Google Gemini (réel) » / « Anthropic (réel) ») — l'app ne prétend jamais faire de l'IA quand elle n'en fait pas. Le statut est aussi interrogable via `GET /api/ai/status`.
 
 ---
 
@@ -302,7 +304,7 @@ Données utilisateur
 
 **Statut fournisseur honnête** : `GET /api/ai/status` renvoie `{ providerId, real, configured }`. L'UI affiche un bandeau explicite — « Mode hors-ligne — Mock » (offline, déterministe) ou « Anthropic (réel) ». L'app ne simule jamais une vraie génération en production.
 
-L'interface `AIProvider` rend le fournisseur remplaçable sans toucher au domaine (`mock`, `anthropic` ; `openai`, `gemini`, `openrouter` prévus).
+L'interface `AIProvider` rend le fournisseur remplaçable sans toucher au domaine (`mock`, `anthropic`, `gemini` ; `openai`, `openrouter` prévus). Chaque adapter partage le même prompt (`prompt.ts`) et la même extraction JSON, donc changer de fournisseur ne change ni ce qu'on demande au modèle ni la validation de sa réponse.
 
 ---
 
@@ -324,13 +326,13 @@ L'**og:image** des pages publiques (`/cv/[slug]`) est générée via la même ro
 ## Tests, typecheck, build
 
 ```bash
-pnpm test         # tous les tests (vitest) — 139 tests
+pnpm test         # tous les tests (vitest) — 144 tests
 pnpm typecheck    # tsc --noEmit sur tous les packages
 pnpm build        # build de tous les packages + Next.js
 pnpm --filter web build   # build uniquement l'app web
 ```
 
-Au moment de la rédaction : **139 tests passent** (types 6, core 45, data 18, services 5, web 65), typecheck et build verts.
+Au moment de la rédaction : **144 tests passent** (types 6, core 45, data 18, services 10, web 65), typecheck et build verts.
 
 ---
 
@@ -345,6 +347,7 @@ Au moment de la rédaction : **139 tests passent** (types 6, core 45, data 18, s
 - ✅ **Phase 6 — Scale** : extension du catalogue, nouveaux modules, statistiques agrégées, mode d'édition avancé, og:image.
 - ✅ **V2 — Moteur intelligent & vraie IA** : base de jeux enrichie (72 jeux, 28 modules composables, aliases/déduplication, métadonnées), recherche tolérante aux fautes (serveur), pipeline IA par **analyse** (enrichissement du contexte par jeu, modes + tonalités, `GeneratedText` V2 structuré), `verifyFacts` avec `gameMetaBlob`, statut fournisseur honnête (`/api/ai/status`), correctif NaN multi-couches.
 - ✅ **V2 — Audit & robustesse** : correctif **anti-SSRF** sur l'export/og (URL de rendu issue d'`EXPORT_BASE_URL`, jamais des en-têtes client) ; robustesse IA (`max_tokens` 4096, retry sur JSON tronqué, `GenerationFormatError` ré-essayable) ; rendu template propre (labels FR + filtrage des champs vides, plus de mur de « — ») ; **normalisation de `generatedText`** à chaque point d'entrée (hydrate / cloud / éditions) — fixe le crash `/create` (`generated.specializations.length` sur donnée périmée) ; déduplication des profils cloud (`cloudProfileId`) ; `DELETE /api/profiles/[id]`.
+- ✅ **V2 — Provider Google Gemini** : adapter `GeminiProvider` (REST natif, zéro SDK), branché dans la factory (`AI_PROVIDER=gemini` + `GEMINI_API_KEY`, alias `GOOGLE_API_KEY`). Helpers prompt/JSON extraits dans `prompt.ts` partagé (DRY avec Anthropic). Statut honnête étendu (`/api/ai/status` reconnaît Gemini comme réel). **Quasi gratuit** : free tier Google Gemini, aucune CB requise — idéal pour tester la vraie génération IA.
 
 Chaque phase est livrable et utilisable seule.
 

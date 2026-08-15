@@ -15,11 +15,13 @@ export function GET() {
   try {
     const { providerId: id } = createAIProvider();
     providerId = id;
-    real = id === "anthropic";
+    real = id === "anthropic" || id === "gemini";
     if (id === "anthropic") {
       detail = "Anthropic (génération réelle par IA).";
+    } else if (id === "gemini") {
+      detail = "Google Gemini (génération réelle par IA).";
     } else {
-      detail = "Mock (offline, déterministe) — définis AI_PROVIDER=anthropic + ANTHROPIC_API_KEY pour une vraie génération.";
+      detail = "Mock (offline, déterministe) — définis AI_PROVIDER=gemini + GEMINI_API_KEY pour une vraie génération.";
     }
   } catch (err) {
     configured = false;
