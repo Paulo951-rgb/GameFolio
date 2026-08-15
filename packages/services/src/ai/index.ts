@@ -1,5 +1,6 @@
 import type { AIProvider } from "@gamer-cv/types";
 import { AnthropicProvider } from "./anthropic";
+import { GeminiProvider } from "./gemini";
 import { MockProvider } from "./mock";
 
 /**
@@ -9,6 +10,8 @@ import { MockProvider } from "./mock";
  *
  * Adapters shipped:
  *  - anthropic  — Anthropic Messages API (claude-3-5-sonnet). Server-only.
+ *  - gemini     — Google Gemini REST API (gemini-2.0-flash). Generous free tier;
+ *                 best "real IA quasi gratuite" option. Server-only, no SDK.
  *  - mock       — deterministic, tokenless; for tests and dev without an API key.
  */
 
@@ -88,6 +91,19 @@ export function createAIProvider(env: NodeJS.ProcessEnv = process.env): {
       });
       break;
     }
+    case "gemini": {
+      const apiKey = env.GEMINI_API_KEY ?? env.GOOGLE_API_KEY;
+      if (!apiKey) {
+        throw new Error(
+          "AI_PROVIDER=gemini requires GEMINI_API_KEY (or GOOGLE_API_KEY) to be set",
+        );
+      }
+      provider = new GeminiProvider({
+        apiKey,
+        model: env.GEMINI_MODEL,
+      });
+      break;
+    }
     case "mock":
       provider = new MockProvider();
       break;
@@ -99,4 +115,4 @@ export function createAIProvider(env: NodeJS.ProcessEnv = process.env): {
   return cached;
 }
 
-export { AnthropicProvider, MockProvider };
+export { AnthropicProvider, GeminiProvider, MockProvider };
