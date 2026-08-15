@@ -3,6 +3,20 @@
 import { useEditorStore } from "@/lib/store";
 import { templates } from "@/components/preview/templates";
 import { Field, Fieldset, Select } from "@/components/ui";
+import { CV_SECTIONS, type CVSectionId, type ThemeConfig } from "@gamer-cv/types";
+
+/** All canonical sections in the user's chosen order, INCLUDING hidden ones
+ *  (so the editor can show/toggle them). The templates' `resolveSectionOrder`
+ *  filters hidden out for actual rendering; this is the editor-facing counterpart. */
+function buildDisplayOrder(theme: ThemeConfig): CVSectionId[] {
+  const validIds = CV_SECTIONS.map((s) => s.id);
+  const valid = new Set<string>(validIds);
+  const ordered = (theme.sectionOrder ?? validIds).filter((id) => valid.has(id));
+  for (const id of validIds) {
+    if (!ordered.includes(id)) ordered.push(id);
+  }
+  return ordered as CVSectionId[];
+}
 
 const DENSITIES = ["compact", "normal", "spacious"] as const;
 const FONTS = [
@@ -116,6 +130,97 @@ export function CustomizeStep() {
           </Select>
         </Field>
       </div>
+      <div className="surface-2 p-4">
+        <h3 className="mb-1 text-sm font-semibold text-content-secondary">Sections du profil</h3>
+        <p className="mb-3 text-xs text-content-muted">
+          Réordonne et masque les blocs. L'en-tête (identité) reste toujours visible.
+        </p>
+        <SectionOrderEditor
+          order={buildDisplayOrder(theme)}
+          hidden={new Set(theme.hiddenSections ?? [])}
+          onChange={(order, hidden) =>
+            setTheme({
+              sectionOrder: order.length === CV_SECTIONS.length ? order : undefined,
+              hiddenSections: hidden.size === 0 ? undefined : [...hidden],
+            })
+          }
+        />
+      </div>
     </Fieldset>
+  );
+}
+
+/** Reorderable, toggleable section list. Up/down moves an id within `order`;
+ *  the checkbox toggles membership in `hidden`. The caller persists the result. */
+function SectionOrderEditor({
+  order,
+  hidden,
+  onChange,
+}: {
+  order: CVSectionId[];
+  hidden: Set<string>;
+  onChange: (order: CVSectionId[], hidden: Set<string>) => void;
+}) {
+  function move(index: number, dir: -1 | 1) {
+    const next = [...order];
+    const target = index + dir;
+    if (target < 0 || target >= next.length) return;
+    [next[index], next[target]] = [next[target], next[index]];
+    onChange(next, hidden);
+  }
+  function toggle(id: CVSectionId) {
+    const next = new Set(hidden);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    onChange(order, next);
+  }
+  // Show every canonical section; hidden ones stay in their ordered position so
+  // re-enabling them reappears where the user expects.
+  return (
+    <ul className="space-y-1.5">
+      {order.map((id, i) => {
+        const meta = CV_SECTIONS.find((s) => s.id === id);
+        const isHidden = hidden.has(id);
+        return (
+          <li
+            key={id}
+            className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm transition ${
+              isHidden
+                ? "border-line opacity-50"
+                : "border-line-strong bg-surface"
+            }`}
+          >
+            <label className="flex flex-1 cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={!isHidden}
+                onChange={() => toggle(id)}
+                className="accent-[var(--color-accent)]"
+                aria-label={`Afficher la section ${meta?.label ?? id}`}
+              />
+              <span className={isHidden ? "line-through" : ""}>{meta?.label ?? id}</span>
+            </label>
+            <button
+              type="button"
+              onClick={() => move(i, -1)}
+              disabled={i === 0}
+              aria-label={`Monter ${meta?.label ?? id}`}
+              className="rounded border border-line px-1.5 text-xs text-content-muted transition hover:border-line-strong hover:text-content-primary disabled:opacity-30"
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              onClick={() => move(i, 1)}
+              disabled={i === order.length - 1}
+              aria-label={`Descendre ${meta?.label ?? id}`}
+              className="rounded border border-line px-1.5 text-xs text-content-muted transition hover:border-line-strong hover:text-content-primary disabled:opacity-30"
+            >
+              ↓
+            </button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useEditorStore } from "@/lib/store";
 import type { FieldVisibility } from "@gamer-cv/types";
 import { Field, Fieldset, TextInput, NumberInput, Textarea } from "@/components/ui";
@@ -19,6 +20,7 @@ export function PersonalInfoStep() {
   const setPersonalInfo = useEditorStore((s) => s.setPersonalInfo);
   const setFieldVisibility = useEditorStore((s) => s.setFieldVisibility);
   const info = profile.personalInfo;
+  const [avatarError, setAvatarError] = useState<string | null>(null);
 
   function setField(key: keyof typeof FIELDS | "bio", value: string | number | undefined) {
     setPersonalInfo({ [key]: value } as never);
@@ -115,13 +117,13 @@ export function PersonalInfoStep() {
         />
       </Field>
 
-      <Field label={FIELDS.avatarUrl.label} htmlFor="avatarUrl">
-        <TextInput
-          id="avatarUrl"
-          type="text"
-          value={info.avatarUrl ?? ""}
-          onChange={(e) => setField("avatarUrl", e.target.value)}
-          placeholder={FIELDS.avatarUrl.placeholder}
+      <Field label={FIELDS.avatarUrl.label} htmlFor="avatarUrl" error={avatarError ?? undefined}>
+        <AvatarField
+          url={info.avatarUrl ?? ""}
+          gamerTag={info.gamerTag}
+          onChange={(v) => setField("avatarUrl", v)}
+          onLoad={() => setAvatarError(null)}
+          onError={() => setAvatarError("Impossible de charger cette image (URL invalide ou non publique).")}
         />
       </Field>
 
@@ -192,6 +194,62 @@ function VisibilityControls({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+/** URL input + live circular preview. Validates that the URL is well-formed
+ *  and that the browser can actually fetch+decode it as an image (onError
+ *  fires for 404s, non-image MIME, or CORS-blocked loads). Empty URL = no
+ *  preview, no error (avatar is optional). The fallback monogram uses the
+ *  gamerTag's first letter so the placeholder is personalized, not a bare "?". */
+function AvatarField({
+  url,
+  gamerTag,
+  onChange,
+  onLoad,
+  onError,
+}: {
+  url: string;
+  gamerTag: string;
+  onChange: (v: string) => void;
+  onLoad: () => void;
+  onError: () => void;
+}) {
+  const trimmed = url.trim();
+  let urlValid = true;
+  if (trimmed) {
+    try {
+      new URL(trimmed);
+    } catch {
+      urlValid = false;
+    }
+  }
+  const monogram = (gamerTag?.trim()?.[0] ?? "?").toUpperCase();
+  return (
+    <div className="flex items-center gap-3">
+      <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-full border border-line bg-surface-2">
+        {trimmed && urlValid ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={trimmed}
+            alt=""
+            className="h-full w-full object-cover"
+            onLoad={onLoad}
+            onError={onError}
+          />
+        ) : (
+          <span className="text-lg font-semibold text-content-muted">{monogram}</span>
+        )}
+      </div>
+      <TextInput
+        id="avatarUrl"
+        type="text"
+        value={url}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={FIELDS.avatarUrl.placeholder}
+        className="flex-1"
+      />
     </div>
   );
 }

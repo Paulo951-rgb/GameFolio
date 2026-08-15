@@ -1,4 +1,4 @@
-import type { ThemeConfig } from "@gamer-cv/types";
+import { CV_SECTION_IDS, type ThemeConfig, type CVSectionId } from "@gamer-cv/types";
 
 /**
  * Shared presentation helpers for CV templates. Templates are pure
@@ -85,4 +85,31 @@ export function resolveFieldLabel(
 ): string {
   const found = resolvedFields?.find((f) => f.key === key);
   return found?.label ?? formatLabel(key);
+}
+
+/**
+ * Resolve the ordered, visible list of CV section ids for a theme.
+ *
+ * - Starts from `theme.sectionOrder` if set; any canonical id missing from it
+ *   is appended in canonical order (so adding a new section id later can't
+ *   silently drop it from existing profiles).
+ * - Unknown ids in sectionOrder are dropped (defensive against stale/foreign
+ *   persisted data).
+ * - Removes anything in `theme.hiddenSections`.
+ * - Returns the canonical order when sectionOrder is unset (default).
+ *
+ * Templates iterate this list and render their styled block per id; the header
+ * (identity) is always rendered separately and is NOT part of this list.
+ */
+export function resolveSectionOrder(theme: ThemeConfig): CVSectionId[] {
+  const hidden = new Set(theme.hiddenSections ?? []);
+  const valid = new Set<string>(CV_SECTION_IDS);
+  const ordered = (theme.sectionOrder ?? [...CV_SECTION_IDS]).filter(
+    (id) => valid.has(id) && !hidden.has(id),
+  );
+  // Append any canonical id that wasn't explicitly ordered (and isn't hidden).
+  for (const id of CV_SECTION_IDS) {
+    if (!ordered.includes(id) && !hidden.has(id)) ordered.push(id);
+  }
+  return ordered as CVSectionId[];
 }

@@ -9,6 +9,7 @@ import {
   formatValue,
   isEmptyValue,
   resolveFieldLabel,
+  resolveSectionOrder,
 } from "./template-utils";
 import { GeneratedSections } from "./GeneratedSections";
 import { BadgesRow, AchievementsList, BioLine, type SectionTheme } from "./ProfileSections";
@@ -71,91 +72,103 @@ export function MinimalistTemplate({
         <BioLine bio={personalInfo.bio} />
       </header>
 
-      {playerTypes.length > 0 && (
-        <section className={s.section}>
-          <h2 className={`mb-2 ${s.text} font-semibold uppercase tracking-wider`} style={{ color: c.primary }}>
-            Profil de joueur
-          </h2>
-          <div className={`flex flex-wrap ${s.gap}`}>
-            {playerTypes.map((t) => (
-              <span
-                key={t}
-                className="rounded-full px-3 py-1 text-sm"
-                style={{ backgroundColor: `${c.primary}22`, color: c.primary }}
-              >
-                {t}
-              </span>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <BadgesRow badges={badges} t={sectionTheme} />
-
-      <GeneratedSections
-        generated={generated}
-        t={{
-          primary: c.primary,
-          text: c.text,
-          headingClass: `mb-2 ${s.text} font-semibold uppercase tracking-wider`,
-          bodyClass: `${s.text} leading-relaxed opacity-90`,
-          sectionClass: s.section,
-        }}
-      />
-
-      {games.length > 0 && (
-        <section>
-          <h2 className={`mb-3 ${s.text} font-semibold uppercase tracking-wider`} style={{ color: c.primary }}>
-            Détail par jeu
-          </h2>
-          <div className="space-y-4">
-            {games.map((entry, i) => {
-              const game = getGame(entry.gameId);
-              const fields = getResolvedGame(entry.gameId)?.fields;
-              // Omit empty values (untouched fields) so the CV shows only what
-              // the player actually filled in — no wall of "—" placeholders.
-              const entries = Object.entries(entry.moduleData).filter(
-                ([, val]) => !isEmptyValue(val),
-              );
-              return (
-                <article
-                  key={`${entry.gameId}-${i}`}
-                  className="rounded-md border p-4"
-                  style={{ borderColor: `${c.primary}33` }}
-                >
-                  <h3 className="text-lg font-semibold">
-                    {game?.name ?? entry.gameId}
-                  </h3>
-                  {game?.publisher && (
-                    <div className="text-xs opacity-60">{game.publisher}</div>
-                  )}
-                  {entries.length > 0 && (
-                    <dl className={`mt-3 grid grid-cols-2 ${s.gap} text-sm`}>
-                      {entries.map(([key, val]) => (
-                        <div key={key}>
-                          <dt className="opacity-50">{resolveFieldLabel(key, fields)}</dt>
-                          <dd className="font-medium">{formatValue(val)}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                  )}
-                  {entry.freeText && (
-                    <p className="mt-3 text-sm italic opacity-75">{entry.freeText}</p>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {games.length === 0 && !generated && (
-        <p className="py-12 text-center text-sm opacity-40">
-          Votre aperçu apparaîtra ici au fur et à mesure.
-        </p>
-      )}
-
-      <AchievementsList achievements={achievements} t={sectionTheme} />
+      {(() => {
+        // Section blocks keyed by canonical id. The header (identity) above is
+        // always rendered; these are the reorderable/hideable blocks, emitted
+        // in the order resolved from the theme (resolveSectionOrder).
+        const renderers: Record<string, React.ReactNode> = {
+          playerTypes:
+            playerTypes.length > 0 ? (
+              <section className={s.section}>
+                <h2 className={`mb-2 ${s.text} font-semibold uppercase tracking-wider`} style={{ color: c.primary }}>
+                  Profil de joueur
+                </h2>
+                <div className={`flex flex-wrap ${s.gap}`}>
+                  {playerTypes.map((t) => (
+                    <span
+                      key={t}
+                      className="rounded-full px-3 py-1 text-sm"
+                      style={{ backgroundColor: `${c.primary}22`, color: c.primary }}
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            ) : null,
+          badges: <BadgesRow badges={badges} t={sectionTheme} />,
+          about: (
+            <GeneratedSections
+              generated={generated}
+              t={{
+                primary: c.primary,
+                text: c.text,
+                headingClass: `mb-2 ${s.text} font-semibold uppercase tracking-wider`,
+                bodyClass: `${s.text} leading-relaxed opacity-90`,
+                sectionClass: s.section,
+              }}
+            />
+          ),
+          games:
+            games.length > 0 ? (
+              <section>
+                <h2 className={`mb-3 ${s.text} font-semibold uppercase tracking-wider`} style={{ color: c.primary }}>
+                  Détail par jeu
+                </h2>
+                <div className="space-y-4">
+                  {games.map((entry, i) => {
+                    const game = getGame(entry.gameId);
+                    const fields = getResolvedGame(entry.gameId)?.fields;
+                    // Omit empty values (untouched fields) so the CV shows only what
+                    // the player actually filled in — no wall of "—" placeholders.
+                    const entries = Object.entries(entry.moduleData).filter(
+                      ([, val]) => !isEmptyValue(val),
+                    );
+                    return (
+                      <article
+                        key={`${entry.gameId}-${i}`}
+                        className="rounded-md border p-4"
+                        style={{ borderColor: `${c.primary}33` }}
+                      >
+                        <h3 className="text-lg font-semibold">
+                          {game?.name ?? entry.gameId}
+                        </h3>
+                        {game?.publisher && (
+                          <div className="text-xs opacity-60">{game.publisher}</div>
+                        )}
+                        {entries.length > 0 && (
+                          <dl className={`mt-3 grid grid-cols-2 ${s.gap} text-sm`}>
+                            {entries.map(([key, val]) => (
+                              <div key={key}>
+                                <dt className="opacity-50">{resolveFieldLabel(key, fields)}</dt>
+                                <dd className="font-medium">{formatValue(val)}</dd>
+                              </div>
+                            ))}
+                          </dl>
+                        )}
+                        {entry.freeText && (
+                          <p className="mt-3 text-sm italic opacity-75">{entry.freeText}</p>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : null,
+          achievements: <AchievementsList achievements={achievements} t={sectionTheme} />,
+        };
+        const nodes = resolveSectionOrder(theme)
+          .map((id) => renderers[id] ?? null)
+          .filter((n) => n !== null);
+        if (nodes.length === 0) {
+          return (
+            <p className="py-12 text-center text-sm opacity-40">
+              Votre aperçu apparaîtra ici au fur et à mesure.
+            </p>
+          );
+        }
+        return nodes;
+      })()}
     </div>
   );
 }

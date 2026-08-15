@@ -50,6 +50,14 @@ export interface EditorState {
    *  Tracked so repeated saves PATCH the same row instead of POSTing duplicates.
    *  null for a purely-local profile. Persisted alongside the profile. */
   cloudProfileId: string | null;
+  /** True while a debounced IndexedDB autosave is pending (between an edit and
+   *  the actual idb write completing). Drives the honest "Enregistrement…"
+   *  status in the editor header. */
+  isSaving: boolean;
+  /** Epoch ms of the last successful IndexedDB autosave write, or null when no
+   *  save has happened yet this session (e.g. right after hydrate). Drives the
+   *  "Sauvegardé il y a Xs" status. */
+  lastSavedAt: number | null;
   /** Facts the anti-hallucination check flagged as "à vérifier". */
   flaggedFacts: string[];
   /** True while an AI generation request is in flight. */
@@ -85,11 +93,21 @@ export interface EditorState {
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
+/**
+ * Debounced autosave to IndexedDB (400ms after the last edit). Also drives the
+ * editor's save-status indicator: marks `isSaving` true while a write is
+ * pending, then flips it false and stamps `lastSavedAt` once idb resolves — so
+ * the header can show an honest "Enregistrement…" → "Sauvegardé il y a Xs"
+ * instead of a permanently-static "Sauvegardé".
+ */
 function scheduleSave(profile: GamerProfile) {
   if (typeof window === "undefined") return;
+  useEditorStore.setState({ isSaving: true });
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    void idbSet(STORAGE_KEY, profile);
+    void idbSet(STORAGE_KEY, profile).then(() => {
+      useEditorStore.setState({ isSaving: false, lastSavedAt: Date.now() });
+    });
   }, 400);
 }
 
@@ -98,6 +116,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   currentStep: 0,
   hydrated: false,
   cloudProfileId: null,
+  isSaving: false,
+  lastSavedAt: null,
   flaggedFacts: [],
   isGenerating: false,
   generationError: null,
@@ -216,6 +236,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       profile,
       currentStep: 0,
       cloudProfileId: null,
+      isSaving: false,
+      lastSavedAt: null,
       flaggedFacts: [],
       isGenerating: false,
       generationError: null,

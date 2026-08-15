@@ -14,8 +14,40 @@ export const ThemeConfigSchema = z.object({
   fontFamily: z.string().optional(),
   density: z.enum(["compact", "normal", "spacious"]).optional(),
   columns: z.number().int().min(1).max(3).optional(),
+  /** Ordered list of CV section ids (subset of CV_SECTION_IDS). Sections not
+   *  listed are appended in canonical order. Omit to use the default order. */
+  sectionOrder: z.array(z.string()).optional(),
+  /** Section ids to hide entirely (presentation-only; the visibility engine
+   *  still governs field-level visibility upstream). */
+  hiddenSections: z.array(z.string()).optional(),
 });
 export type ThemeConfig = z.infer<typeof ThemeConfigSchema>;
+
+/**
+ * Canonical, togglable/reorderable CV sections. The profile header (identity:
+ * gamerTag, avatar, bio, socials) is always rendered and is therefore NOT in
+ * this list — only the blocks a user may want to reorder or hide. A template
+ * renders exactly these sections, in the order resolved by
+ * `resolveSectionOrder(theme)` (apps/web), skipping any in `hiddenSections`.
+ *
+ * Keep ids stable: they are persisted in ThemeConfig and must not change.
+ */
+export const CV_SECTION_IDS = [
+  "playerTypes",
+  "badges",
+  "about",
+  "games",
+  "achievements",
+] as const;
+export type CVSectionId = (typeof CV_SECTION_IDS)[number];
+
+export const CV_SECTIONS: ReadonlyArray<{ id: CVSectionId; label: string }> = [
+  { id: "playerTypes", label: "Profil de joueur" },
+  { id: "badges", label: "Badges" },
+  { id: "about", label: "Présentation IA" },
+  { id: "games", label: "Détail par jeu" },
+  { id: "achievements", label: "Achievements" },
+];
 
 /**
  * AI-generated CV text, stored SEPARATELY from raw data (GamerProfile.generatedText

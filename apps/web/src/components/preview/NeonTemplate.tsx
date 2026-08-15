@@ -9,6 +9,7 @@ import {
   formatValue,
   isEmptyValue,
   resolveFieldLabel,
+  resolveSectionOrder,
 } from "./template-utils";
 import { GeneratedSections } from "./GeneratedSections";
 import { BadgesRow, AchievementsList, BioLine, type SectionTheme } from "./ProfileSections";
@@ -70,87 +71,92 @@ export function NeonTemplate({
         <BioLine bio={p.bio} />
       </header>
 
-      {playerTypes.length > 0 && (
-        <section className={s.section}>
-          <h2 className={`mb-2 ${s.text} font-bold uppercase tracking-[0.2em]`} style={{ color: c.accent, textShadow: `0 0 6px ${c.accent}88` }}>
-            // Profil
-          </h2>
-          <div className={`flex flex-wrap ${s.gap}`}>
-            {playerTypes.map((t) => (
-              <span
-                key={t}
-                className="rounded-sm px-3 py-1 text-sm font-bold uppercase"
-                style={{ border: `1px solid ${c.primary}`, color: c.primary, textShadow: glow }}
-              >
-                {t}
-              </span>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <BadgesRow badges={badges} t={sectionTheme} />
-
-      {generated && (
-        <GeneratedSections
-          generated={generated}
-          t={{
-            primary: c.accent,
-            text: c.text,
-            headingClass: `mb-2 ${s.text} font-bold uppercase tracking-[0.2em]`,
-            bodyClass: `${s.text} leading-relaxed opacity-90`,
-            sectionClass: s.section,
-            headingPrefix: "// ",
-            headingStyle: { textShadow: `0 0 6px ${c.accent}88` },
-          }}
-        />
-      )}
-
-      {games.length > 0 && (
-        <section>
-          <h2 className={`mb-3 ${s.text} font-bold uppercase tracking-[0.2em]`} style={{ color: c.accent, textShadow: `0 0 6px ${c.accent}88` }}>
-            // Détail par jeu
-          </h2>
-          <div className="space-y-3">
-            {games.map((entry, i) => {
-              const game = getGame(entry.gameId);
-              const fields = getResolvedGame(entry.gameId)?.fields;
-              const entries = Object.entries(entry.moduleData).filter(
-                ([, val]) => !isEmptyValue(val),
-              );
-              return (
-                <article
-                  key={`${entry.gameId}-${i}`}
-                  className="p-4"
-                  style={{ border: `1px solid ${c.primary}`, boxShadow: `0 0 10px -3px ${c.primary}` }}
-                >
-                  <h3 className="text-xl font-bold uppercase" style={{ color: c.primary, textShadow: glow }}>
-                    {game?.name ?? entry.gameId}
-                  </h3>
-                  {game?.publisher && <div className="text-xs opacity-50">{game.publisher}</div>}
-                  {entries.length > 0 && (
-                    <dl className={`mt-3 grid grid-cols-2 ${s.gap} text-sm`}>
-                      {entries.map(([key, val]) => (
-                        <div key={key}>
-                          <dt className="opacity-50">{resolveFieldLabel(key, fields)}</dt>
-                          <dd style={{ color: c.accent }}>{formatValue(val)}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                  )}
-                  {entry.freeText && <p className="mt-2 text-sm italic opacity-70">{entry.freeText}</p>}
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {games.length === 0 && !generated && (
-        <p className="py-12 text-center text-sm opacity-40">// Votre aperçu apparaîtra ici.</p>
-      )}
-
-      <AchievementsList achievements={achievements} t={sectionTheme} />
+      {(() => {
+        const renderers: Record<string, React.ReactNode> = {
+          playerTypes:
+            playerTypes.length > 0 ? (
+              <section className={s.section}>
+                <h2 className={`mb-2 ${s.text} font-bold uppercase tracking-[0.2em]`} style={{ color: c.accent, textShadow: `0 0 6px ${c.accent}88` }}>
+                  // Profil
+                </h2>
+                <div className={`flex flex-wrap ${s.gap}`}>
+                  {playerTypes.map((t) => (
+                    <span
+                      key={t}
+                      className="rounded-sm px-3 py-1 text-sm font-bold uppercase"
+                      style={{ border: `1px solid ${c.primary}`, color: c.primary, textShadow: glow }}
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            ) : null,
+          badges: <BadgesRow badges={badges} t={sectionTheme} />,
+          about: generated ? (
+            <GeneratedSections
+              generated={generated}
+              t={{
+                primary: c.accent,
+                text: c.text,
+                headingClass: `mb-2 ${s.text} font-bold uppercase tracking-[0.2em]`,
+                bodyClass: `${s.text} leading-relaxed opacity-90`,
+                sectionClass: s.section,
+                headingPrefix: "// ",
+                headingStyle: { textShadow: `0 0 6px ${c.accent}88` },
+              }}
+            />
+          ) : null,
+          games:
+            games.length > 0 ? (
+              <section>
+                <h2 className={`mb-3 ${s.text} font-bold uppercase tracking-[0.2em]`} style={{ color: c.accent, textShadow: `0 0 6px ${c.accent}88` }}>
+                  // Détail par jeu
+                </h2>
+                <div className="space-y-3">
+                  {games.map((entry, i) => {
+                    const game = getGame(entry.gameId);
+                    const fields = getResolvedGame(entry.gameId)?.fields;
+                    const entries = Object.entries(entry.moduleData).filter(
+                      ([, val]) => !isEmptyValue(val),
+                    );
+                    return (
+                      <article
+                        key={`${entry.gameId}-${i}`}
+                        className="p-4"
+                        style={{ border: `1px solid ${c.primary}`, boxShadow: `0 0 10px -3px ${c.primary}` }}
+                      >
+                        <h3 className="text-xl font-bold uppercase" style={{ color: c.primary, textShadow: glow }}>
+                          {game?.name ?? entry.gameId}
+                        </h3>
+                        {game?.publisher && <div className="text-xs opacity-50">{game.publisher}</div>}
+                        {entries.length > 0 && (
+                          <dl className={`mt-3 grid grid-cols-2 ${s.gap} text-sm`}>
+                            {entries.map(([key, val]) => (
+                              <div key={key}>
+                                <dt className="opacity-50">{resolveFieldLabel(key, fields)}</dt>
+                                <dd style={{ color: c.accent }}>{formatValue(val)}</dd>
+                              </div>
+                            ))}
+                          </dl>
+                        )}
+                        {entry.freeText && <p className="mt-2 text-sm italic opacity-70">{entry.freeText}</p>}
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : null,
+          achievements: <AchievementsList achievements={achievements} t={sectionTheme} />,
+        };
+        const nodes = resolveSectionOrder(theme)
+          .map((id) => renderers[id] ?? null)
+          .filter((n) => n !== null);
+        if (nodes.length === 0) {
+          return <p className="py-12 text-center text-sm opacity-40">// Votre aperçu apparaîtra ici.</p>;
+        }
+        return nodes;
+      })()}
     </div>
   );
 }

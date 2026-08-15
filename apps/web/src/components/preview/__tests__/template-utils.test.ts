@@ -7,8 +7,10 @@ import {
   formatValue,
   isEmptyValue,
   resolveFieldLabel,
+  resolveSectionOrder,
 } from "@/components/preview/template-utils";
 import type { ThemeConfig } from "@gamer-cv/types";
+import { CV_SECTION_IDS } from "@gamer-cv/types";
 
 const baseTheme: ThemeConfig = { templateId: "minimalist" };
 
@@ -128,6 +130,43 @@ describe("template-utils", () => {
     it("falls back to camelCase humanization for unknown keys / no fields", () => {
       expect(resolveFieldLabel("headshotPercent", [])).toBe("Headshot Percent");
       expect(resolveFieldLabel("headshotPercent", undefined)).toBe("Headshot Percent");
+    });
+  });
+
+  describe("resolveSectionOrder", () => {
+    it("returns the canonical order by default", () => {
+      expect(resolveSectionOrder(baseTheme)).toEqual([...CV_SECTION_IDS]);
+    });
+
+    it("respects a custom sectionOrder", () => {
+      expect(
+        resolveSectionOrder({
+          ...baseTheme,
+          sectionOrder: ["games", "badges", "playerTypes", "about", "achievements"],
+        }),
+      ).toEqual(["games", "badges", "playerTypes", "about", "achievements"]);
+    });
+
+    it("removes hidden sections", () => {
+      expect(
+        resolveSectionOrder({ ...baseTheme, hiddenSections: ["badges", "achievements"] }),
+      ).toEqual(["playerTypes", "about", "games"]);
+    });
+
+    it("drops unknown ids and appends missing canonical ones", () => {
+      expect(
+        resolveSectionOrder({ ...baseTheme, sectionOrder: ["games", "bogus", "about"] }),
+      ).toEqual(["games", "about", "playerTypes", "badges", "achievements"]);
+    });
+
+    it("does not append a hidden section missing from sectionOrder", () => {
+      expect(
+        resolveSectionOrder({
+          ...baseTheme,
+          sectionOrder: ["games"],
+          hiddenSections: ["badges", "playerTypes", "about", "achievements"],
+        }),
+      ).toEqual(["games"]);
     });
   });
 });
