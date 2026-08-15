@@ -10,6 +10,7 @@ import type {
   ThemeConfig,
   FieldVisibility,
   GeneratedText,
+  Achievement,
 } from "@gamer-cv/types";
 import { normalizeGeneratedText } from "@/lib/normalize";
 
@@ -35,6 +36,7 @@ function makeDefaultProfile(): GamerProfile {
     },
     playerTypes: [],
     games: [],
+    achievements: [],
     templateId: "minimalist",
     themeConfig: { templateId: "minimalist" },
   };
@@ -76,6 +78,9 @@ export interface EditorState {
   setFlaggedFacts: (facts: string[]) => void;
   setGenerating: (v: boolean) => void;
   setGenerationError: (msg: string | null) => void;
+  addAchievement: (a: Achievement) => void;
+  updateAchievement: (id: string, patch: Partial<Achievement>) => void;
+  removeAchievement: (id: string) => void;
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -288,4 +293,31 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       generationError: v ? null : s.generationError,
     })),
   setGenerationError: (msg) => set({ generationError: msg }),
+
+  addAchievement: (a) => {
+    const profile = {
+      ...get().profile,
+      achievements: [...(get().profile.achievements ?? []), a],
+    };
+    set({ profile });
+    scheduleSave(profile);
+  },
+  updateAchievement: (id, patch) => {
+    const profile = {
+      ...get().profile,
+      achievements: (get().profile.achievements ?? []).map((a) =>
+        a.id === id ? { ...a, ...patch } : a,
+      ),
+    };
+    set({ profile });
+    scheduleSave(profile);
+  },
+  removeAchievement: (id) => {
+    const profile = {
+      ...get().profile,
+      achievements: (get().profile.achievements ?? []).filter((a) => a.id !== id),
+    };
+    set({ profile });
+    scheduleSave(profile);
+  },
 }));

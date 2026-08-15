@@ -16,7 +16,16 @@ export async function GET() {
   const rows = await prisma.gamerProfile.findMany({
     where: { userId },
     orderBy: { updatedAt: "desc" },
-    select: { id: true, slug: true, isPublic: true, updatedAt: true, createdAt: true, templateId: true },
+    select: {
+      id: true,
+      slug: true,
+      isPublic: true,
+      updatedAt: true,
+      createdAt: true,
+      templateId: true,
+      personalInfo: true,
+      _count: { select: { games: true } },
+    },
   });
   return NextResponse.json({ profiles: rows });
 }
@@ -43,6 +52,7 @@ export async function POST(req: Request) {
         userId,
         personalInfo: p.personalInfo,
         playerTypes: p.playerTypes,
+        achievements: p.achievements,
         templateId: p.templateId,
         themeConfig: p.themeConfig,
         generatedText: p.generatedText,

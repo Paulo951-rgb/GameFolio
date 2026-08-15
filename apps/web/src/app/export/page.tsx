@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { GamerProfileSchema, type GamerProfile } from "@gamer-cv/types";
 import { normalizeProfile } from "@/lib/normalize";
 import { CVTemplate } from "@/components/preview/templates";
+import { resolveTemplateBackground } from "@/components/preview/template-themes";
 import { decodeProfileParam } from "./decode";
 
 /**
@@ -15,6 +16,11 @@ import { decodeProfileParam } from "./decode";
  * no server-side profile storage for the MVP). This page runs with no app
  * chrome and sizes the CV to A4. Once the template mounts it sets
  * `data-cv-rendered="true"`, which the exporter waits for before capturing.
+ *
+ * The canvas background is resolved from the active template's default theme
+ * (overridable by the user's themeConfig) so a dark CV never sits on a white
+ * page — the export is edge-to-edge with a matching backdrop. Print CSS strips
+ * the template's card chrome (rounded corners + drop shadow) for a clean PDF.
  */
 export default function ExportRenderPage() {
   const [profile, setProfile] = useState<GamerProfile | null>(null);
@@ -44,11 +50,15 @@ export default function ExportRenderPage() {
     [profile],
   );
 
+  const bg = profile ? resolveTemplateBackground(profile.themeConfig) : "#ffffff";
+
   return (
     <div
-      className="cv-export-root flex items-start justify-center bg-white"
+      className="cv-export-root flex items-start justify-center"
       data-cv-rendered={data ? "true" : undefined}
-      style={{ minHeight: "100vh" }}
+      style={
+        { minHeight: "100vh", backgroundColor: bg, "--cv-bg": bg } as React.CSSProperties
+      }
     >
       {error && (
         <p className="p-8 text-sm text-red-600" data-cv-error="true">
@@ -56,7 +66,7 @@ export default function ExportRenderPage() {
         </p>
       )}
       {data && profile && (
-        <div className="w-[210mm] bg-white text-slate-900 shadow-none">
+        <div className="cv-export-canvas w-[210mm]">
           <CVTemplate data={data} theme={profile.themeConfig} />
         </div>
       )}

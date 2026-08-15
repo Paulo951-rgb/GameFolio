@@ -9,3 +9,4 @@ export * from "./game";
 export * from "./theme";
 export * from "./ai";
 export * from "./stats";
+export * from "./badges";

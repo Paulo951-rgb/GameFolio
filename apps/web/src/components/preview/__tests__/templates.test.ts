@@ -29,6 +29,16 @@ describe("template component modules", () => {
     const mod = await import("@/components/preview/NeonTemplate");
     expect(typeof mod.NeonTemplate).toBe("function");
   });
+
+  it("TechTemplate exports a component", async () => {
+    const mod = await import("@/components/preview/TechTemplate");
+    expect(typeof mod.TechTemplate).toBe("function");
+  });
+
+  it("CreatorTemplate exports a component", async () => {
+    const mod = await import("@/components/preview/CreatorTemplate");
+    expect(typeof mod.CreatorTemplate).toBe("function");
+  });
 });
 
 /**
@@ -38,9 +48,9 @@ describe("template component modules", () => {
  */
 describe("template id set (source of truth)", () => {
   // Must stay in sync with templates.tsx `templates` array.
-  const expected = ["minimalist", "gaming", "classique", "neon"];
+  const expected = ["minimalist", "gaming", "classique", "neon", "tech", "creator"];
 
-  it("covers the four documented MVP/Phase-4 templates", () => {
-    expect(expected).toEqual(["minimalist", "gaming", "classique", "neon"]);
+  it("covers the documented templates", () => {
+    expect(expected).toEqual(["minimalist", "gaming", "classique", "neon", "tech", "creator"]);
   });
 });

@@ -32,6 +32,7 @@ model GamerProfile {
   isPublic      Boolean  @default(false)
   personalInfo  Json     // pseudo, pays, langues, réseaux, visibility per field
   playerTypes   Json     // string[] — stored as Json (SQLite has no scalar-list support)
+  achievements  Json?    // profile-level user-added achievements (badges.ts)
   templateId    String
   themeConfig   Json
   generatedText Json?

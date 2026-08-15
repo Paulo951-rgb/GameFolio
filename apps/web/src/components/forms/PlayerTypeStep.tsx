@@ -10,9 +10,9 @@ export function PlayerTypeStep() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold">Type de joueur</h2>
-        <p className="mt-1 text-sm text-slate-400">
-          Sélectionnez un ou plusieurs profils qui vous correspondent.
+        <h2 className="text-lg font-semibold text-content-primary">Profil de joueur</h2>
+        <p className="mt-1 text-sm text-content-muted">
+          Sélectionne un ou plusieurs profils qui te correspondent.
         </p>
       </div>
       <PlayerTypeSelector selected={playerTypes} onChange={setPlayerTypes} />

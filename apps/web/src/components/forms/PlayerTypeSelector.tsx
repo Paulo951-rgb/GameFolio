@@ -29,14 +29,15 @@ export function PlayerTypeSelector({ selected, onChange }: PlayerTypeSelectorPro
             key={t.id}
             type="button"
             onClick={() => toggle(t.id)}
+            aria-pressed={active}
             className={`rounded-lg border p-3 text-left transition ${
               active
-                ? "border-violet-500 bg-violet-600/20"
-                : "border-slate-700 bg-slate-900 hover:border-slate-600"
+                ? "border-accent bg-accent/15 text-accent"
+                : "border-line bg-surface hover:border-line-strong"
             }`}
           >
-            <div className="font-semibold">{t.label}</div>
-            <div className="mt-0.5 text-xs text-slate-400">{t.description}</div>
+            <div className="font-semibold text-content-primary">{t.label}</div>
+            <div className="mt-0.5 text-xs text-content-muted">{t.description}</div>
           </button>
         );
       })}

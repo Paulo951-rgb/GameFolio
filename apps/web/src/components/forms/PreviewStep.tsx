@@ -58,8 +58,8 @@ export function PreviewStep() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Aperçu final</h2>
-          <p className="mt-1 text-sm text-slate-400">
+          <h2 className="text-lg font-semibold text-content-primary">Aperçu final</h2>
+          <p className="mt-1 text-sm text-content-muted">
             Génère le texte de ton CV, ajuste-le, puis exporte-le en PDF ou image.
           </p>
         </div>
@@ -70,15 +70,15 @@ export function PreviewStep() {
               reset();
             }
           }}
-          className="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:text-red-400"
+          className="rounded-md border border-line px-3 py-1.5 text-xs text-content-muted hover:text-danger"
         >
           Réinitialiser
         </button>
       </div>
 
       {games.filter((g) => g.gameId).length === 0 && (
-        <p className="rounded-md border border-amber-700/50 bg-amber-900/20 p-3 text-sm text-amber-200">
-          Aucun jeu sélectionné. Revenez à l’étape « Jeux » pour en ajouter.
+        <p className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm text-warning">
+          Aucun jeu sélectionné. Reviens à l'étape « Jeux » pour en ajouter.
         </p>
       )}
 
@@ -90,7 +90,7 @@ export function PreviewStep() {
         <button
           type="button"
           onClick={() => setShareOpen(true)}
-          className="rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500"
+          className="btn btn-primary px-4 py-2 text-sm"
         >
           Partager
         </button>
@@ -99,9 +99,13 @@ export function PreviewStep() {
             type="button"
             disabled={saveState.busy}
             onClick={() => void saveToCloud()}
-            className="rounded-md border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-50"
+            className="btn btn-ghost px-4 py-2 text-sm disabled:opacity-50"
           >
-            {saveState.busy ? "Sauvegarde…" : cloudProfileId ? "Mettre à jour le cloud" : "Sauvegarder dans le cloud"}
+            {saveState.busy
+              ? "Sauvegarde…"
+              : cloudProfileId
+                ? "Mettre à jour le cloud"
+                : "Sauvegarder dans le cloud"}
           </button>
         )}
       </div>
@@ -109,7 +113,7 @@ export function PreviewStep() {
       {saveState.msg && (
         <p
           className={`text-sm ${
-            saveState.msg.startsWith("Échec") ? "text-red-400" : "text-emerald-400"
+            saveState.msg.startsWith("Échec") ? "text-danger" : "text-success"
           }`}
         >
           {saveState.msg}
@@ -121,8 +125,8 @@ export function PreviewStep() {
       <div className="lg:hidden">
         <LivePreviewPane />
       </div>
-      <div className="hidden text-sm text-slate-500 lg:block">
-        L’aperçu en direct reste disponible dans la colonne de droite.
+      <div className="hidden text-sm text-content-muted lg:block">
+        L'aperçu en direct reste disponible dans la colonne centrale.
       </div>
     </div>
   );

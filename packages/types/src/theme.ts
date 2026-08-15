@@ -80,11 +80,20 @@ export type GeneratedText = z.infer<typeof GeneratedTextSchema>;
  * Normalized view handed to a template component. Templates are presentation-only
  * and receive this normalized model so swapping templates never changes which
  * data is shown or how fields are selected.
+ *
+ * `badges` are computed from the real profile data (computeBadges) and
+ * `achievements` are the user-added, visibility-filtered profile achievements.
+ * Both are part of the normalized view so every render surface (preview,
+ * export, public page) shows them consistently (WYSIWYG).
  */
 export interface NormalizedCVData {
   personalInfo: import("./profile").PersonalInfo;
   playerTypes: string[];
   games: GameEntryPublic[];
+  /** Auto-earned badges (computed upstream from real data, never fabricated). */
+  badges: import("./badges").Badge[];
+  /** User-added, visibility-filtered achievements. */
+  achievements: import("./badges").Achievement[];
   generated?: GeneratedText;
 }
 

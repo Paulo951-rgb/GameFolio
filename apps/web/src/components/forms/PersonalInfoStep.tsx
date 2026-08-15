@@ -2,15 +2,10 @@
 
 import { useEditorStore } from "@/lib/store";
 import type { FieldVisibility } from "@gamer-cv/types";
-
-const inputClass =
-  "mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500";
-const labelClass = "block text-sm font-medium text-slate-300";
-
-const VISIBLE_FIELDS: { key: keyof typeof FIELDS; label: string }[] = [];
+import { Field, Fieldset, TextInput, NumberInput, Textarea } from "@/components/ui";
 
 const FIELDS = {
-  gamerTag: { label: "Pseudo / GamerTag *", type: "text", placeholder: "ShadowHunter" },
+  gamerTag: { label: "Pseudo / GamerTag", type: "text", placeholder: "ShadowHunter" },
   firstName: { label: "Prénom", type: "text" },
   age: { label: "Âge", type: "number" },
   country: { label: "Pays", type: "text", placeholder: "France" },
@@ -25,12 +20,11 @@ export function PersonalInfoStep() {
   const setFieldVisibility = useEditorStore((s) => s.setFieldVisibility);
   const info = profile.personalInfo;
 
-  function setField(key: keyof typeof FIELDS, value: string | number | undefined) {
+  function setField(key: keyof typeof FIELDS | "bio", value: string | number | undefined) {
     setPersonalInfo({ [key]: value } as never);
   }
 
   function setSocials(raw: string) {
-    // discord:twitch:...
     const entries = raw
       .split("\n")
       .map((l) => l.split(":"))
@@ -44,57 +38,55 @@ export function PersonalInfoStep() {
     .join("\n");
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Informations personnelles</h2>
+    <Fieldset>
+      <h2 className="text-lg font-semibold text-content-primary">Identité du joueur</h2>
+      <p className="-mt-2 text-sm text-content-muted">
+        Qui tu es en jeu. Le pseudo est le seul champ obligatoire.
+      </p>
 
-      <label className="block">
-        <span className={labelClass}>{FIELDS.gamerTag.label}</span>
-        <input
+      <Field label={FIELDS.gamerTag.label} required htmlFor="gamerTag">
+        <TextInput
+          id="gamerTag"
           type="text"
           value={info.gamerTag}
           onChange={(e) => setField("gamerTag", e.target.value)}
           placeholder={FIELDS.gamerTag.placeholder}
-          className={inputClass}
         />
-      </label>
+      </Field>
 
       <div className="grid grid-cols-2 gap-4">
-        <label className="block">
-          <span className={labelClass}>{FIELDS.firstName.label}</span>
-          <input
+        <Field label={FIELDS.firstName.label} htmlFor="firstName">
+          <TextInput
+            id="firstName"
             type="text"
             value={info.firstName ?? ""}
             onChange={(e) => setField("firstName", e.target.value)}
-            className={inputClass}
           />
-        </label>
-        <label className="block">
-          <span className={labelClass}>{FIELDS.age.label}</span>
-          <input
-            type="number"
+        </Field>
+        <Field label={FIELDS.age.label} htmlFor="age">
+          <NumberInput
+            id="age"
             value={info.age ?? ""}
             onChange={(e) =>
               setField("age", e.target.value === "" ? undefined : Number(e.target.value))
             }
-            className={inputClass}
           />
-        </label>
+        </Field>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <label className="block">
-          <span className={labelClass}>{FIELDS.country.label}</span>
-          <input
+        <Field label={FIELDS.country.label} htmlFor="country">
+          <TextInput
+            id="country"
             type="text"
             value={info.country ?? ""}
             onChange={(e) => setField("country", e.target.value)}
             placeholder={FIELDS.country.placeholder}
-            className={inputClass}
           />
-        </label>
-        <label className="block">
-          <span className={labelClass}>{FIELDS.languages.label}</span>
-          <input
+        </Field>
+        <Field label={FIELDS.languages.label} htmlFor="languages">
+          <TextInput
+            id="languages"
             type="text"
             value={(info.languages ?? []).join(", ")}
             onChange={(e) =>
@@ -104,14 +96,13 @@ export function PersonalInfoStep() {
               )
             }
             placeholder={FIELDS.languages.placeholder}
-            className={inputClass}
           />
-        </label>
+        </Field>
       </div>
 
-      <label className="block">
-        <span className={labelClass}>{FIELDS.platforms.label}</span>
-        <input
+      <Field label={FIELDS.platforms.label} htmlFor="platforms">
+        <TextInput
+          id="platforms"
           type="text"
           value={(info.platforms ?? []).join(", ")}
           onChange={(e) =>
@@ -121,42 +112,51 @@ export function PersonalInfoStep() {
             )
           }
           placeholder={FIELDS.platforms.placeholder}
-          className={inputClass}
         />
-      </label>
+      </Field>
 
-      <label className="block">
-        <span className={labelClass}>{FIELDS.avatarUrl.label}</span>
-        <input
+      <Field label={FIELDS.avatarUrl.label} htmlFor="avatarUrl">
+        <TextInput
+          id="avatarUrl"
           type="text"
           value={info.avatarUrl ?? ""}
           onChange={(e) => setField("avatarUrl", e.target.value)}
           placeholder={FIELDS.avatarUrl.placeholder}
-          className={inputClass}
         />
-      </label>
+      </Field>
 
-      <label className="block">
-        <span className={labelClass}>Réseaux sociaux (une ligne au format nom:url)</span>
-        <textarea
+      <Field
+        label="Bio / Présentation"
+        htmlFor="bio"
+        hint="Une phrase qui te décrit — affichée sur ton profil et fournie à l'IA."
+      >
+        <Textarea
+          id="bio"
+          value={info.bio ?? ""}
+          onChange={(e) => setField("bio", e.target.value)}
+          rows={3}
+          placeholder="Joueur FPS compétitif depuis 2018, fan de Valorant et de construction Minecraft."
+        />
+      </Field>
+
+      <Field label="Réseaux sociaux (une ligne au format nom:valeur)" htmlFor="socials">
+        <Textarea
+          id="socials"
           value={socialsText}
           onChange={(e) => setSocials(e.target.value)}
           rows={3}
           placeholder={"discord:Shad0w\ntwitch:shadowhunter"}
-          className={inputClass}
         />
-      </label>
+      </Field>
 
       <VisibilityControls
         fields={["age", "country", "firstName"]}
         visibility={info.visibility}
         onChange={(key, v) => setFieldVisibility("personal", key, v)}
       />
-    </div>
+    </Fieldset>
   );
 }
-
-void VISIBLE_FIELDS;
 
 function VisibilityControls({
   fields,
@@ -169,24 +169,24 @@ function VisibilityControls({
 }) {
   if (fields.length === 0) return null;
   return (
-    <div className="rounded-md border border-slate-800 p-3">
-      <div className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">
+    <div className="surface-2 p-3">
+      <div className="mb-2 text-xs font-medium uppercase tracking-wider text-content-muted">
         Visibilité des champs
       </div>
       <div className="space-y-2">
         {fields.map((f) => (
           <div key={f} className="flex items-center gap-3 text-sm">
-            <span className="w-20 capitalize">{f}</span>
+            <span className="w-20 capitalize text-content-secondary">{f}</span>
             {(["visible", "hidden", "private"] as const).map((v) => (
-              <label key={v} className="flex items-center gap-1">
+              <label key={v} className="flex items-center gap-1 text-content-muted">
                 <input
                   type="radio"
                   name={`vis-${f}`}
                   checked={(visibility[f] ?? "visible") === v}
                   onChange={() => onChange(f, v)}
-                  className="accent-violet-500"
+                  className="accent-[var(--color-accent)]"
                 />
-                <span className="text-slate-400">{v}</span>
+                <span>{v}</span>
               </label>
             ))}
           </div>

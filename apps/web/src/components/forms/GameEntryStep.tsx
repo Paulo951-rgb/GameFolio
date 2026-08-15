@@ -1,115 +1,137 @@
 "use client";
 
 import { useEditorStore } from "@/lib/store";
-import { GameSearchCombobox } from "./GameSearchCombobox";
+import { GameCardGrid } from "@/components/wizard/GameCardGrid";
 import { DynamicGameForm } from "./DynamicGameForm";
 import { getResolvedGame, getGame } from "@/lib/games";
 import type { GameDefinition } from "@gamer-cv/types";
+import { Field, Textarea, Button, Badge } from "@/components/ui";
 
+/**
+ * GameEntryStep — modern game selection + per-game stats form.
+ *
+ * Selection is now card-based (GameCardGrid): the user toggles games in/out
+ * directly, which adds/removes an entry in the store. Each selected game then
+ * renders its dynamic form (driven by the module schema — no per-game UI code)
+ * + free text. Order is adjusted via up/down controls.
+ */
 export function GameEntryStep() {
   const games = useEditorStore((s) => s.profile.games);
+  const addGame = useEditorStore((s) => s.addGame);
   const updateGame = useEditorStore((s) => s.updateGame);
   const removeGame = useEditorStore((s) => s.removeGame);
   const reorderGames = useEditorStore((s) => s.reorderGames);
 
   const selectedIds = games.map((g) => g.gameId).filter(Boolean);
 
+  function toggle(g: GameDefinition) {
+    const existingIdx = games.findIndex((e) => e.gameId === g.id);
+    if (existingIdx >= 0) {
+      removeGame(existingIdx);
+    } else {
+      addGame({ gameId: g.id, moduleData: {}, order: games.length });
+    }
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Vos jeux</h2>
-        <p className="mt-1 text-sm text-slate-400">
-          Recherchez et sélectionnez chaque jeu, puis remplissez le formulaire généré.
+        <h2 className="text-lg font-semibold text-content-primary">Tes jeux</h2>
+        <p className="mt-1 text-sm text-content-muted">
+          Sélectionne tes jeux, puis remplis les statistiques générées automatiquement pour chacun.
         </p>
       </div>
 
-      {games.length === 0 && (
-        <p className="rounded-md border border-dashed border-slate-700 p-6 text-center text-sm text-slate-500">
-          Aucun emplacement. Revenez à l’étape précédente pour en ajouter.
-        </p>
+      <GameCardGrid selectedIds={selectedIds} onToggle={toggle} />
+
+      {games.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-content-secondary">
+            Statistiques par jeu ({games.length})
+          </h3>
+          {games.map((entry, index) => {
+            const resolved = entry.gameId ? getResolvedGame(entry.gameId) : null;
+            const game = entry.gameId ? getGame(entry.gameId) : undefined;
+
+            return (
+              <div key={entry.gameId || `empty-${index}`} className="surface p-4">
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-content-muted">#{index + 1}</span>
+                    {game && (
+                      <h4 className="font-semibold text-content-primary">{game.name}</h4>
+                    )}
+                    {game?.genres?.slice(0, 2).map((gg) => (
+                      <Badge key={gg} tone="accent">
+                        {gg}
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label="Monter"
+                      disabled={index === 0}
+                      onClick={() => reorderGames(index, index - 1)}
+                    >
+                      ↑
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label="Descendre"
+                      disabled={index === games.length - 1}
+                      onClick={() => reorderGames(index, index + 1)}
+                    >
+                      ↓
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Retirer ${game?.name ?? "ce jeu"}`}
+                      onClick={() => removeGame(index)}
+                    >
+                      ✕
+                    </Button>
+                  </div>
+                </div>
+
+                {resolved && game && (
+                  <>
+                    <DynamicGameForm
+                      game={game}
+                      fields={resolved.fields}
+                      compositeSchema={resolved.compositeSchema}
+                      values={entry.moduleData}
+                      onChange={(data) => updateGame(index, { moduleData: data })}
+                    />
+                    <Field
+                      label="Texte libre (anecdotes, contexte, équipe…)"
+                      htmlFor={`freetext-${index}`}
+                      className="mt-4"
+                    >
+                      <Textarea
+                        id={`freetext-${index}`}
+                        value={entry.freeText ?? ""}
+                        onChange={(e) => updateGame(index, { freeText: e.target.value })}
+                        rows={2}
+                        placeholder="Optionnel"
+                      />
+                    </Field>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
 
-      {games.map((entry, index) => {
-        const resolved = entry.gameId ? getResolvedGame(entry.gameId) : null;
-        const game = entry.gameId ? getGame(entry.gameId) : undefined;
-
-        return (
-          <div
-            key={index}
-            className="rounded-lg border border-slate-700 bg-slate-900/50 p-4"
-          >
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-medium">
-                Jeu #{index + 1}
-                {game && <span className="ml-2 text-violet-300">{game.name}</span>}
-              </h3>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  aria-label="Monter"
-                  disabled={index === 0}
-                  onClick={() => reorderGames(index, index - 1)}
-                  className="rounded px-2 py-1 text-xs text-slate-400 transition hover:text-slate-100 disabled:opacity-30"
-                >
-                  ↑
-                </button>
-                <button
-                  type="button"
-                  aria-label="Descendre"
-                  disabled={index === games.length - 1}
-                  onClick={() => reorderGames(index, index + 1)}
-                  className="rounded px-2 py-1 text-xs text-slate-400 transition hover:text-slate-100 disabled:opacity-30"
-                >
-                  ↓
-                </button>
-                <button
-                  type="button"
-                  onClick={() => removeGame(index)}
-                  className="ml-2 text-xs text-slate-500 hover:text-red-400"
-                >
-                  Retirer
-                </button>
-              </div>
-            </div>
-
-            {!entry.gameId ? (
-              <GameSearchCombobox
-                excludeIds={selectedIds}
-                onSelect={(g: GameDefinition) =>
-                  updateGame(index, { gameId: g.id })
-                }
-              />
-            ) : (
-              resolved &&
-              game && (
-                <>
-                  <DynamicGameForm
-                    game={game}
-                    fields={resolved.fields}
-                    compositeSchema={resolved.compositeSchema}
-                    values={entry.moduleData}
-                    onChange={(data) => updateGame(index, { moduleData: data })}
-                  />
-                  <label className="mt-4 block">
-                    <span className="block text-sm font-medium text-slate-300">
-                      Texte libre (anecdotes, contexte, équipe…)
-                    </span>
-                    <textarea
-                      value={entry.freeText ?? ""}
-                      onChange={(e) =>
-                        updateGame(index, { freeText: e.target.value })
-                      }
-                      rows={2}
-                      placeholder="Optionnel"
-                      className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
-                    />
-                  </label>
-                </>
-              )
-            )}
-          </div>
-        );
-      })}
+      {games.length === 0 && (
+        <p className="rounded-md border border-dashed border-line p-6 text-center text-sm text-content-muted">
+          Aucun jeu sélectionné. Choisis-en au moins un dans la grille ci-dessus.
+        </p>
+      )}
     </div>
   );
 }

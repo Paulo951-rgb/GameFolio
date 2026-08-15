@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
 import type { FieldDescriptor, GameDefinition } from "@gamer-cv/types";
 import { resolveFieldOptions } from "@/lib/games";
+import { Field, TextInput, NumberInput, Textarea, Select } from "@/components/ui";
 
 /**
  * DynamicGameForm — renders a game's form from its resolved module fields,
@@ -21,10 +22,6 @@ interface DynamicGameFormProps {
   values: Record<string, unknown>;
   onChange: (data: Record<string, unknown>) => void;
 }
-
-const inputClass =
-  "mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500";
-const labelClass = "block text-sm font-medium text-slate-300";
 
 export function DynamicGameForm({
   game,
@@ -94,52 +91,41 @@ function FieldRenderer({
   const hasOptions = !!options?.length;
 
   if (field.type === "select") {
-    // No resolved options -> free-text fallback so the field stays usable
-    // (optionsSource fields use z.string(), so free text validates).
     if (!hasOptions) {
       return (
-        <label className="block">
-          <span className={labelClass}>{field.label}</span>
-          <input
+        <Field label={field.label}>
+          <TextInput
             type="text"
-            className={inputClass}
             placeholder={field.placeholder ?? "Saisie libre"}
             {...register(field.key)}
           />
-        </label>
+        </Field>
       );
     }
     return (
-      <label className="block">
-        <span className={labelClass}>{field.label}</span>
-        <select className={inputClass} {...register(field.key)}>
+      <Field label={field.label}>
+        <Select {...register(field.key)}>
           <option value="">—</option>
           {options.map((o) => (
             <option key={o} value={o}>
               {o}
             </option>
           ))}
-        </select>
-      </label>
+        </Select>
+      </Field>
     );
   }
 
   if (field.type === "multiselect") {
-    // Controlled checkboxes: maintain an array of selected option strings,
-    // pushed to the store on every toggle.
     const selected = Array.isArray(currentValue)
       ? (currentValue as string[])
       : [];
 
-    // No resolved options -> free-text fallback (comma-separated -> array).
-    // The schema is z.array(z.string()), so a split array validates.
     if (!hasOptions) {
       return (
-        <label className="block">
-          <span className={labelClass}>{field.label}</span>
-          <input
+        <Field label={field.label}>
+          <TextInput
             type="text"
-            className={inputClass}
             placeholder="Saisie libre (séparé par des virgules)"
             value={selected.join(", ")}
             onChange={(e) =>
@@ -152,7 +138,7 @@ function FieldRenderer({
               )
             }
           />
-        </label>
+        </Field>
       );
     }
 
@@ -163,8 +149,10 @@ function FieldRenderer({
       onMultiChange(field.key, next);
     }
     return (
-      <fieldset className="block">
-        <span className={labelClass}>{field.label}</span>
+      <fieldset>
+        <span className="block text-sm font-medium text-content-secondary">
+          {field.label}
+        </span>
         <div className="mt-2 flex flex-wrap gap-2">
           {options.map((o) => {
             const checked = selected.includes(o);
@@ -173,15 +161,15 @@ function FieldRenderer({
                 key={o}
                 className={`inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition ${
                   checked
-                    ? "border-violet-500 bg-violet-600/20"
-                    : "border-slate-700 bg-slate-900 hover:border-slate-600"
+                    ? "border-accent bg-accent/15 text-accent"
+                    : "border-line bg-surface hover:border-line-strong"
                 }`}
               >
                 <input
                   type="checkbox"
                   checked={checked}
                   onChange={(e) => toggle(o, e.target.checked)}
-                  className="accent-violet-500"
+                  className="accent-[var(--color-accent)]"
                 />
                 {o}
               </label>
@@ -194,42 +182,27 @@ function FieldRenderer({
 
   if (field.type === "number") {
     return (
-      <label className="block">
-        <span className={labelClass}>{field.label}</span>
-        <input
-          type="number"
-          className={inputClass}
+      <Field label={field.label}>
+        <NumberInput
           placeholder={field.placeholder}
           {...register(field.key, { valueAsNumber: true })}
         />
-      </label>
+      </Field>
     );
   }
 
   if (field.type === "textarea") {
     return (
-      <label className="block">
-        <span className={labelClass}>{field.label}</span>
-        <textarea
-          className={inputClass}
-          rows={3}
-          placeholder={field.placeholder}
-          {...register(field.key)}
-        />
-      </label>
+      <Field label={field.label}>
+        <Textarea rows={3} placeholder={field.placeholder} {...register(field.key)} />
+      </Field>
     );
   }
 
   // text
   return (
-    <label className="block">
-      <span className={labelClass}>{field.label}</span>
-      <input
-        type="text"
-        className={inputClass}
-        placeholder={field.placeholder}
-        {...register(field.key)}
-      />
-    </label>
+    <Field label={field.label}>
+      <TextInput type="text" placeholder={field.placeholder} {...register(field.key)} />
+    </Field>
   );
 }

@@ -11,6 +11,7 @@ import {
   resolveFieldLabel,
 } from "./template-utils";
 import { GeneratedSections } from "./GeneratedSections";
+import { BadgesRow, AchievementsList, BioLine, type SectionTheme } from "./ProfileSections";
 
 /**
  * Minimalist template — presentation-only. Receives the normalized, already
@@ -32,7 +33,14 @@ export function MinimalistTemplate({
   });
   const s = spacing(theme);
   const font = resolveFont(theme, "Inter, sans-serif");
-  const { personalInfo, playerTypes, games, generated } = data;
+  const { personalInfo, playerTypes, games, badges, achievements, generated } = data;
+
+  const sectionTheme: SectionTheme = {
+    primary: c.primary,
+    text: c.text,
+    headingClass: `mb-2 ${s.text} font-semibold uppercase tracking-wider`,
+    sectionClass: s.section,
+  };
 
   return (
     <div
@@ -60,6 +68,7 @@ export function MinimalistTemplate({
             ))}
           </div>
         )}
+        <BioLine bio={personalInfo.bio} />
       </header>
 
       {playerTypes.length > 0 && (
@@ -80,6 +89,8 @@ export function MinimalistTemplate({
           </div>
         </section>
       )}
+
+      <BadgesRow badges={badges} t={sectionTheme} />
 
       <GeneratedSections
         generated={generated}
@@ -143,6 +154,8 @@ export function MinimalistTemplate({
           Votre aperçu apparaîtra ici au fur et à mesure.
         </p>
       )}
+
+      <AchievementsList achievements={achievements} t={sectionTheme} />
     </div>
   );
 }

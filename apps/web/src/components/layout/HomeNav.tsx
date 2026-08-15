@@ -16,10 +16,10 @@ export function HomeNav() {
   if (!user) {
     return (
       <nav className="flex gap-2 text-sm">
-        <Link href="/login" className="rounded-md border border-slate-700 px-3 py-1.5 text-slate-300 hover:bg-slate-800">
+        <Link href="/login" className="btn btn-ghost px-3 py-1.5">
           Connexion
         </Link>
-        <Link href="/register" className="rounded-md bg-violet-600 px-3 py-1.5 font-medium text-white hover:bg-violet-500">
+        <Link href="/register" className="btn btn-primary px-3 py-1.5">
           Compte
         </Link>
       </nav>
@@ -28,13 +28,15 @@ export function HomeNav() {
 
   return (
     <nav className="flex items-center gap-3 text-sm">
-      <span className="max-w-[14rem] truncate text-slate-400" title={user.email}>{user.email}</span>
-      <Link href="/dashboard" className="rounded-md border border-slate-700 px-3 py-1.5 text-slate-300 hover:bg-slate-800">
-        Mes CV
+      <span className="max-w-[14rem] truncate text-content-muted" title={user.email}>
+        {user.email}
+      </span>
+      <Link href="/dashboard" className="btn btn-ghost px-3 py-1.5">
+        Mes GameFolios
       </Link>
       <button
         onClick={() => void logout().then(() => window.location.reload())}
-        className="rounded-md border border-slate-700 px-3 py-1.5 text-slate-300 hover:bg-slate-800"
+        className="btn btn-ghost px-3 py-1.5"
       >
         Déconnexion
       </button>

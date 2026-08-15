@@ -2,10 +2,283 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================================
+   GameFolio design system — dark premium gaming tokens.
+   A single source of truth for surfaces, accents, radii, glow, focus and
+   motion. Components consume these via Tailwind arbitrary values or the
+   `surface`/`btn` component classes below. Swapping the accent (e.g. per
+   template) only changes --accent on a subtree.
+   ========================================================================== */
 :root {
-  --font-sans: system-ui;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+
+  /* Surfaces — very dark base, slightly lifted layers. */
+  --bg-base: #07080d;
+  --bg-surface: #0d0f17;
+  --bg-surface-2: #141826;
+  --bg-elevated: #1a1f30;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.16);
+
+  /* Text. */
+  --text-primary: #f2f4f8;
+  --text-secondary: #a4abbd;
+  --text-muted: #6b7385;
+
+  /* Accent — violet/blue, overridable per template/subtree. */
+  --accent: #7c5cff;
+  --accent-2: #4f7cff;
+  --accent-soft: rgba(124, 92, 255, 0.14);
+  --accent-glow: rgba(124, 92, 255, 0.35);
+
+  /* Feedback. */
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #fb7185;
+
+  /* Radii. */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+
+  /* Focus ring. */
+  --focus-ring: 0 0 0 2px var(--bg-base), 0 0 0 4px var(--accent-glow);
+
+  /* Motion. */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur-fast: 120ms;
+  --dur: 200ms;
 }
 
-body {
-  @apply bg-slate-950 text-slate-100 antialiased;
+@layer base {
+  body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Subtle ambient background gradient — premium, not loud. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(900px 600px at 78% -8%, rgba(124, 92, 255, 0.10), transparent 60%),
+      radial-gradient(800px 500px at 8% 8%, rgba(79, 124, 255, 0.08), transparent 55%);
+    pointer-events: none;
+  }
+
+  ::selection {
+    background: var(--accent-soft);
+    color: var(--text-primary);
+  }
+
+  /* Accessible focus everywhere. */
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+    border-radius: var(--radius-sm);
+  }
+
+  /* Scrollbars — thin, themed. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--border-default);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--border-strong);
+    background-clip: padding-box;
+  }
+}
+
+@layer components {
+  /* Surface cards. */
+  .surface {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+  }
+  .surface-2 {
+    background-color: var(--bg-surface-2);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+  }
+  .surface-elevated {
+    background-color: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 30px -12px rgba(0, 0, 0, 0.6);
+  }
+
+  /* Hairline divider. */
+  .hairline {
+    border-color: var(--border-subtle);
+  }
+
+  /* Accent gradient text. */
+  .text-gradient {
+    background: linear-gradient(100deg, var(--text-primary), var(--accent) 70%, var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Buttons. */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] px-4 py-2 text-sm font-medium transition;
+    transition-duration: var(--dur);
+    transition-timing-function: var(--ease);
+  }
+  .btn-primary {
+    background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 80%, #000 20%));
+    color: #fff;
+    box-shadow: 0 6px 20px -8px var(--accent-glow);
+  }
+  .btn-primary:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 8px 26px -8px var(--accent-glow);
+  }
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+  .btn-ghost {
+    color: var(--text-secondary);
+    border: 1px solid var(--border-default);
+    background: transparent;
+  }
+  .btn-ghost:hover {
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+    background: var(--bg-surface-2);
+  }
+  .btn-ghost:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .btn-danger {
+    color: var(--danger);
+    border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+    background: transparent;
+  }
+  .btn-danger:hover {
+    background: color-mix(in srgb, var(--danger) 14%, transparent);
+  }
+
+  /* Inputs. */
+  .field {
+    @apply w-full rounded-[var(--radius-md)] px-3 py-2 text-sm transition;
+    background-color: var(--bg-surface-2);
+    border: 1px solid var(--border-default);
+    color: var(--text-primary);
+    transition-duration: var(--dur);
+    transition-timing-function: var(--ease);
+  }
+  .field::placeholder {
+    color: var(--text-muted);
+  }
+  .field:hover {
+    border-color: var(--border-strong);
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  /* Chip / tag. */
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium;
+    background: var(--bg-surface-2);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+  }
+
+  /* Glow ring used sparingly on hero/active elements. */
+  .glow-accent {
+    box-shadow: 0 0 0 1px var(--accent-soft), 0 12px 40px -16px var(--accent-glow);
+  }
+}
+
+@layer utilities {
+  /* Entrance animations — short, fluid, never permanent loops. */
+  .animate-rise {
+    animation: gf-rise var(--dur) var(--ease) both;
+  }
+  .animate-fade {
+    animation: gf-fade var(--dur) var(--ease) both;
+  }
+  .animate-pop {
+    animation: gf-pop var(--dur) var(--ease) both;
+  }
+  @keyframes gf-rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes gf-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes gf-pop {
+    0% { opacity: 0; transform: scale(0.96); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  .stagger > * {
+    animation: gf-rise var(--dur) var(--ease) both;
+  }
+  .stagger > *:nth-child(2) { animation-delay: 60ms; }
+  .stagger > *:nth-child(3) { animation-delay: 120ms; }
+  .stagger > *:nth-child(4) { animation-delay: 180ms; }
+  .stagger > *:nth-child(5) { animation-delay: 240ms; }
+  .stagger > *:nth-child(6) { animation-delay: 300ms; }
+  .stagger > *:nth-child(7) { animation-delay: 360ms; }
+  .stagger > *:nth-child(8) { animation-delay: 420ms; }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+/* Respect reduced motion: disable all non-essential animation. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Print/export tuning — only applies inside the isolated export render page.
+   The live templates are "cards" (rounded corners + drop shadow) which looks
+   right on screen but wrong on a PDF page. Here we flatten that chrome so the
+   CV prints edge-to-edge, and force the canvas background to fill the page so
+   a dark template doesn't reveal white A4 margins. */
+@media print {
+  .cv-export-root {
+    background-color: var(--cv-bg, #fff) !important;
+  }
+  .cv-export-canvas,
+  .cv-export-canvas > * {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
 }

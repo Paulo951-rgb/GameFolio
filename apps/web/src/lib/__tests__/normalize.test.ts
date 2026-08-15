@@ -26,6 +26,7 @@ function baseProfile(generatedText?: GeneratedText): GamerProfile {
     personalInfo: { gamerTag: "ShadowHunter", visibility: {} },
     playerTypes: [],
     games: [],
+    achievements: [],
     templateId: "minimalist",
     themeConfig: { templateId: "minimalist" },
     generatedText,
