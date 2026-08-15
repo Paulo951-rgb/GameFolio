@@ -92,7 +92,7 @@ export default function HomePage() {
                     <span aria-hidden>→</span>
                   </Button>
                 </Link>
-                <Link href="/create">
+                <Link href="/cv/demo">
                   <Button variant="ghost" size="lg">
                     Voir un exemple
                   </Button>

@@ -9,6 +9,7 @@ import {
   formatValue,
   isEmptyValue,
   resolveFieldLabel,
+  resolveSectionOrder,
 } from "./template-utils";
 import { GeneratedSections } from "./GeneratedSections";
 import { BadgesRow, AchievementsList, BioLine, type SectionTheme } from "./ProfileSections";
@@ -66,73 +67,78 @@ export function ClassiqueTemplate({
         <BioLine bio={p.bio} />
       </header>
 
-      {playerTypes.length > 0 && (
-        <section className={s.section}>
-          <h2 className={`mb-2 ${s.text} font-semibold uppercase tracking-wider border-b pb-1`} style={{ color: c.accent, borderColor: `${c.accent}33` }}>
-            Profil de joueur
-          </h2>
-          <p className={`${s.text} opacity-80`}>{playerTypes.join(" · ")}</p>
-        </section>
-      )}
-
-      <BadgesRow badges={badges} t={sectionTheme} />
-
-      {generated && (
-        <GeneratedSections
-          generated={generated}
-          t={{
-            primary: c.accent,
-            text: c.text,
-            headingClass: `mb-2 ${s.text} font-semibold uppercase tracking-wider border-b pb-1`,
-            bodyClass: `${s.text} leading-relaxed opacity-90`,
-            sectionClass: s.section,
-          }}
-        />
-      )}
-
-      {games.length > 0 && (
-        <section>
-          <h2 className={`mb-3 ${s.text} font-semibold uppercase tracking-wider border-b pb-1`} style={{ color: c.accent, borderColor: `${c.accent}33` }}>
-            Détail par jeu
-          </h2>
-          <div className="space-y-4">
-            {games.map((entry, i) => {
-              const game = getGame(entry.gameId);
-              const fields = getResolvedGame(entry.gameId)?.fields;
-              const entries = Object.entries(entry.moduleData).filter(
-                ([, val]) => !isEmptyValue(val),
-              );
-              return (
-                <article key={`${entry.gameId}-${i}`}>
-                  <div className="flex items-baseline justify-between">
-                    <h3 className="text-lg font-bold" style={{ color: c.primary }}>
-                      {game?.name ?? entry.gameId}
-                    </h3>
-                    {game?.publisher && <span className="text-xs italic opacity-60">{game.publisher}</span>}
-                  </div>
-                  {entries.length > 0 && (
-                    <dl className={`mt-2 grid grid-cols-2 ${s.gap} text-sm`}>
-                      {entries.map(([key, val]) => (
-                        <div key={key}>
-                          <dt className="italic opacity-50">{resolveFieldLabel(key, fields)}</dt>
-                          <dd>{formatValue(val)}</dd>
+      {(() => {
+        const renderers: Record<string, React.ReactNode> = {
+          playerTypes:
+            playerTypes.length > 0 ? (
+              <section className={s.section}>
+                <h2 className={`mb-2 ${s.text} font-semibold uppercase tracking-wider border-b pb-1`} style={{ color: c.accent, borderColor: `${c.accent}33` }}>
+                  Profil de joueur
+                </h2>
+                <p className={`${s.text} opacity-80`}>{playerTypes.join(" · ")}</p>
+              </section>
+            ) : null,
+          badges: <BadgesRow badges={badges} t={sectionTheme} />,
+          about: generated ? (
+            <GeneratedSections
+              generated={generated}
+              t={{
+                primary: c.accent,
+                text: c.text,
+                headingClass: `mb-2 ${s.text} font-semibold uppercase tracking-wider border-b pb-1`,
+                bodyClass: `${s.text} leading-relaxed opacity-90`,
+                sectionClass: s.section,
+              }}
+            />
+          ) : null,
+          games:
+            games.length > 0 ? (
+              <section>
+                <h2 className={`mb-3 ${s.text} font-semibold uppercase tracking-wider border-b pb-1`} style={{ color: c.accent, borderColor: `${c.accent}33` }}>
+                  Détail par jeu
+                </h2>
+                <div className="space-y-4">
+                  {games.map((entry, i) => {
+                    const game = getGame(entry.gameId);
+                    const fields = getResolvedGame(entry.gameId)?.fields;
+                    const entries = Object.entries(entry.moduleData).filter(
+                      ([, val]) => !isEmptyValue(val),
+                    );
+                    return (
+                      <article key={`${entry.gameId}-${i}`}>
+                        <div className="flex items-baseline justify-between">
+                          <h3 className="text-lg font-bold" style={{ color: c.primary }}>
+                            {game?.name ?? entry.gameId}
+                          </h3>
+                          {game?.publisher && <span className="text-xs italic opacity-60">{game.publisher}</span>}
                         </div>
-                      ))}
-                    </dl>
-                  )}
-                  {entry.freeText && <p className="mt-2 text-sm opacity-75">{entry.freeText}</p>}
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {games.length === 0 && !generated && (
-        <p className="py-12 text-center text-sm opacity-40">Votre aperçu apparaîtra ici.</p>
-      )}
-
-      <AchievementsList achievements={achievements} t={sectionTheme} />
+                        {entries.length > 0 && (
+                          <dl className={`mt-2 grid grid-cols-2 ${s.gap} text-sm`}>
+                            {entries.map(([key, val]) => (
+                              <div key={key}>
+                                <dt className="italic opacity-50">{resolveFieldLabel(key, fields)}</dt>
+                                <dd>{formatValue(val)}</dd>
+                              </div>
+                            ))}
+                          </dl>
+                        )}
+                        {entry.freeText && <p className="mt-2 text-sm opacity-75">{entry.freeText}</p>}
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : null,
+          achievements: <AchievementsList achievements={achievements} t={sectionTheme} />,
+        };
+        const nodes = resolveSectionOrder(theme)
+          .map((id) => renderers[id] ?? null)
+          .filter((n) => n !== null);
+        if (nodes.length === 0) {
+          return <p className="py-12 text-center text-sm opacity-40">Votre aperçu apparaîtra ici.</p>;
+        }
+        return nodes;
+      })()}
     </div>
   );
 }

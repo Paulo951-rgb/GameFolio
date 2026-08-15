@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useEditorStore } from "@/lib/store";
 import { StepWizard } from "@/components/wizard/StepWizard";
 import { LivePreviewPane } from "@/components/preview/LivePreviewPane";
@@ -35,6 +35,8 @@ export default function CreatePage() {
   const hydrated = useEditorStore((s) => s.hydrated);
   const [mobileTab, setMobileTab] = useState<"edit" | "preview">("edit");
   const [zoom, setZoom] = useState(1);
+  const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
+  const previewWrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     void hydrate();
@@ -107,28 +109,66 @@ export default function CreatePage() {
             } lg:block`}
           >
             <div className="lg:sticky lg:top-20">
-              <div className="mb-3 flex items-center justify-between">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs font-medium uppercase tracking-wider text-content-muted">
                   Aperçu en direct
                 </span>
                 <div className="flex items-center gap-1">
-                  <ZoomButton onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.1).toFixed(2)))}>
+                  {/* Device toggle: desktop (full width) / mobile (390px column) */}
+                  <div className="mr-1 flex rounded-md border border-line p-0.5">
+                    <ZoomButton
+                      onClick={() => setDevice("desktop")}
+                      active={device === "desktop"}
+                      title="Aperçu bureau"
+                    >
+                      🖥
+                    </ZoomButton>
+                    <ZoomButton
+                      onClick={() => setDevice("mobile")}
+                      active={device === "mobile"}
+                      title="Aperçu mobile (390px)"
+                    >
+                      📱
+                    </ZoomButton>
+                  </div>
+                  <ZoomButton onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.1).toFixed(2)))} title="Dézoomer">
                     −
                   </ZoomButton>
                   <span className="w-12 text-center text-xs text-content-muted">
                     {Math.round(zoom * 100)}%
                   </span>
-                  <ZoomButton onClick={() => setZoom((z) => Math.min(1.5, +(z + 0.1).toFixed(2)))}>
+                  <ZoomButton onClick={() => setZoom((z) => Math.min(1.5, +(z + 0.1).toFixed(2)))} title="Zoomer">
                     +
                   </ZoomButton>
-                  <ZoomButton onClick={() => setZoom(1)}>reset</ZoomButton>
+                  <ZoomButton onClick={() => setZoom(1)} title="Réinitialiser le zoom">
+                    reset
+                  </ZoomButton>
+                  <ZoomButton
+                    onClick={() => {
+                      const el = previewWrapRef.current;
+                      if (!el) return;
+                      if (document.fullscreenElement) void document.exitFullscreen();
+                      else void el.requestFullscreen();
+                    }}
+                    title="Plein écran"
+                  >
+                    ⛶
+                  </ZoomButton>
                 </div>
               </div>
               <div
+                ref={previewWrapRef}
                 className="overflow-auto rounded-lg border border-line bg-surface-2 p-4 lg:h-[78vh]"
                 style={{ transformOrigin: "top center" }}
               >
-                <div style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }}>
+                <div
+                  className="mx-auto transition-[max-width] duration-200"
+                  style={{
+                    transform: `scale(${zoom})`,
+                    transformOrigin: "top center",
+                    maxWidth: device === "mobile" ? 390 : undefined,
+                  }}
+                >
                   <LivePreviewPane />
                 </div>
               </div>
@@ -150,28 +190,85 @@ export default function CreatePage() {
   );
 }
 
-function ZoomButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+function ZoomButton({
+  onClick,
+  children,
+  active = false,
+  title,
+}: {
+  onClick: () => void;
+  children: React.ReactNode;
+  active?: boolean;
+  title?: string;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="rounded-md border border-line px-2 py-1 text-xs text-content-secondary transition hover:border-line-strong hover:text-content-primary"
+      title={title}
+      aria-pressed={active}
+      className={`rounded-md border px-2 py-1 text-xs transition ${
+        active
+          ? "border-accent bg-accent/15 text-accent"
+          : "border-line text-content-secondary hover:border-line-strong hover:text-content-primary"
+      }`}
     >
       {children}
     </button>
   );
 }
 
-/** Compact save status — reflects the autosave debounced write to IndexedDB. */
+/** Compact save status reflecting the actual IndexedDB autosave lifecycle:
+ *  "Enregistrement…" while a debounced write is pending, "Sauvegardé il y a
+ *  Xs" once it lands, "Sauvegardé" before any save this session (e.g. right
+ *  after hydrate). The relative-time string ticks via a 5s interval. */
 function SaveStatus() {
-  // The store autosaves on every change (400ms debounce). We surface a simple
-  // "saved" affordance; a full dirty-tracking pass is out of scope for MVP.
+  const isSaving = useEditorStore((s) => s.isSaving);
+  const lastSavedAt = useEditorStore((s) => s.lastSavedAt);
+  const [, tick] = useState(0);
+
+  useEffect(() => {
+    if (isSaving) return;
+    const id = setInterval(() => tick((n) => n + 1), 5000);
+    return () => clearInterval(id);
+  }, [isSaving]);
+
+  if (isSaving) {
+    return (
+      <span className="flex items-center gap-1.5 text-xs text-content-muted">
+        <span
+          className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent"
+          aria-hidden
+        />
+        Enregistrement…
+      </span>
+    );
+  }
+
+  if (lastSavedAt) {
+    return (
+      <span className="flex items-center gap-1.5 text-xs text-content-muted">
+        <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden />
+        Sauvegardé il y a {relativeTime(lastSavedAt)}
+      </span>
+    );
+  }
+
   return (
     <span className="flex items-center gap-1.5 text-xs text-content-muted">
       <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden />
       Sauvegardé
     </span>
   );
+}
+
+function relativeTime(ts: number): string {
+  const s = Math.max(0, Math.round((Date.now() - ts) / 1000));
+  if (s < 5) return "quelques secondes";
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m} min`;
+  return `${Math.floor(m / 60)}h`;
 }
 
 /** Vertical step rail for the right pane — quick jump between steps. */
