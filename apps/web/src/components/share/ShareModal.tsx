@@ -64,10 +64,31 @@ export function ShareModal({ open, onClose }: { open: boolean; onClose: () => vo
         useEditorStore.getState().setCloudProfileId(savedId);
       }
       setProfileId(savedId);
+      // Fetch the ACTUAL stored share state so the toggle reflects reality.
+      // Without this, an already-public profile would show unchecked on open,
+      // and re-checking it would mint a new slug (breaking the shared link).
+      await loadShareState(savedId);
     } catch {
       setError("Impossible de sauvegarder le profil.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function loadShareState(id: string) {
+    try {
+      const res = await fetch(`/api/share/${id}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as ShareState;
+      setShare(data);
+      if (data.slug) {
+        const url = `${window.location.origin}/cv/${data.slug}`;
+        setQr(await QRCode.toDataURL(url, { margin: 1, width: 180 }));
+      } else {
+        setQr(null);
+      }
+    } catch {
+      // Non-fatal: the user can still toggle sharing from the default state.
     }
   }
 

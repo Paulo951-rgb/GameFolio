@@ -11,6 +11,31 @@ const ShareSchema = z.object({
 });
 
 /**
+ * GET the current share state (isPublic + slug) for a profile. Owner-only.
+ * Used by the ShareModal so it reflects the ACTUAL stored state on open —
+ * without this, an already-public profile would show its toggle unchecked,
+ * and re-checking it would mint a NEW slug (invalidating the previously-shared
+ * link). Non-owners get 403; a missing profile 404.
+ */
+export async function GET(_req: Request, ctx: { params: { id: string } }) {
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  }
+  const profile = await prisma.gamerProfile.findUnique({
+    where: { id: ctx.params.id },
+    select: { isPublic: true, slug: true, userId: true },
+  });
+  if (!profile) {
+    return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+  }
+  if (profile.userId !== userId) {
+    return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  }
+  return NextResponse.json({ isPublic: profile.isPublic, slug: profile.slug });
+}
+
+/**
  * Toggle a profile's public sharing. Owner-only. Enabling generates a new slug
  * (invalidating any previous link). Disabling clears the slug entirely so the
  * old /cv/[slug] URL stops resolving immediately.
