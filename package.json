@@ -10,10 +10,11 @@
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
-    "db:migrate": "prisma migrate dev",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:seed": "prisma db seed"
+    "db:migrate": "node scripts/ensure-env.mjs && prisma migrate dev",
+    "db:generate": "node scripts/ensure-env.mjs && prisma generate",
+    "db:push": "node scripts/ensure-env.mjs && prisma db push",
+    "db:seed": "node scripts/ensure-env.mjs && prisma db seed",
+    "ensure-env": "node scripts/ensure-env.mjs"
   },
   "devDependencies": {
     "@prisma/client": "^6.19.3",
