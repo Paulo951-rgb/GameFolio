@@ -31,6 +31,10 @@
   --accent-2: #4f7cff;
   --accent-soft: rgba(124, 92, 255, 0.14);
   --accent-glow: rgba(124, 92, 255, 0.35);
+  /* Alias so Tailwind `accent-[var(--color-accent)]` + native form controls
+     pick up the real accent (was a no-op before → controls rendered default
+     browser blue instead of the brand violet). */
+  --color-accent: var(--accent);
 
   /* Feedback. */
   --success: #34d399;
@@ -180,6 +184,56 @@
   .btn-danger:hover {
     background: color-mix(in srgb, var(--danger) 14%, transparent);
   }
+  .btn-secondary {
+    color: var(--text-primary);
+    border: 1px solid var(--border-strong);
+    background: var(--bg-surface-2);
+  }
+  .btn-secondary:hover {
+    border-color: var(--accent);
+    background: var(--bg-elevated);
+  }
+  .btn-outline {
+    color: var(--text-secondary);
+    border: 1px solid var(--border-default);
+    background: transparent;
+  }
+  .btn-outline:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .btn-success {
+    background: linear-gradient(180deg, var(--success), color-mix(in srgb, var(--success) 80%, #000 20%));
+    color: #04130d;
+    box-shadow: 0 6px 20px -8px color-mix(in srgb, var(--success) 50%, transparent);
+  }
+  .btn-success:hover {
+    filter: brightness(1.06);
+  }
+
+  /* Loading state: spinner + keep height stable. */
+  .btn[data-loading="true"] {
+    position: relative;
+    color: transparent !important;
+    pointer-events: none;
+  }
+  .btn[data-loading="true"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 1em;
+    height: 1em;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    color: #fff;
+    animation: gf-spin 0.6s linear infinite;
+  }
+  @keyframes gf-spin {
+    to { transform: rotate(360deg); }
+  }
 
   /* Inputs. */
   .field {
@@ -213,6 +267,59 @@
   /* Glow ring used sparingly on hero/active elements. */
   .glow-accent {
     box-shadow: 0 0 0 1px var(--accent-soft), 0 12px 40px -16px var(--accent-glow);
+  }
+
+  /* Skeleton shimmer for loading placeholders. */
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background: var(--bg-surface-2);
+    border-radius: var(--radius-md);
+  }
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.06),
+      transparent
+    );
+    animation: gf-shimmer 1.4s var(--ease) infinite;
+  }
+  @keyframes gf-shimmer {
+    100% { transform: translateX(100%); }
+  }
+
+  /* Segmented control — accessible radio/toggle group (device toggle, visibility). */
+  .segmented {
+    display: inline-flex;
+    padding: 2px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-default);
+    background: var(--bg-surface-2);
+    gap: 2px;
+  }
+  .segmented-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    border-radius: calc(var(--radius-md) - 2px);
+    padding: 0.375rem 0.625rem;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .segmented-item:hover {
+    color: var(--text-primary);
+  }
+  .segmented-item[data-active="true"] {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 4px 14px -6px var(--accent-glow);
   }
 }
 

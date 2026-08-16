@@ -13,17 +13,20 @@ const TONES: Record<Tone, string> = {
 /**
  * Badge — small status pill (count, category, earned badge). Uses the `.chip`
  * base; tone tints the text. Keep it for non-interactive status, not actions.
+ * `title` passes through as a native tooltip (earned-badge conditions, etc.).
  */
 export function Badge({
   children,
   tone = "default",
+  title,
   className = "",
 }: {
   children: ReactNode;
   tone?: Tone;
+  title?: string;
   className?: string;
 }) {
-  return <span className={`chip ${TONES[tone]} ${className}`}>{children}</span>;
+  return <span title={title} className={`chip ${TONES[tone]} ${className}`}>{children}</span>;
 }
 
 /**

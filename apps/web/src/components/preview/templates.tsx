@@ -39,9 +39,7 @@ const COMPONENTS: Record<string, ComponentType<{ data: NormalizedCVData; theme: 
 };
 
 export const templates: TemplateDefinition[] = TEMPLATE_THEMES.map((t) => ({
-  id: t.id,
-  label: t.label,
-  defaultTheme: t.defaultTheme,
+  ...t,
   component: COMPONENTS[t.id],
 }));
 

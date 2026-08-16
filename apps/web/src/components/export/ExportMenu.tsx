@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { Download, Image as ImageIcon, Check, FileText } from "lucide-react";
 import { useEditorStore } from "@/lib/store";
-import { Button, Card } from "@/components/ui";
+import { Button, Card, Alert } from "@/components/ui";
 
 /**
  * ExportMenu — triggers PDF/PNG export via the headless-render API route and
@@ -62,18 +63,19 @@ export function ExportMenu() {
       </p>
 
       {done ? (
-        <div className="mt-4 rounded-md border border-success/40 bg-success/10 p-4 text-center">
-          <p className="text-sm font-medium text-success">
-            ✓ Votre GameFolio est prêt
+        <div className="mt-4 rounded-lg border border-success/40 bg-success/10 p-4 text-center">
+          <Check size={20} className="mx-auto text-success" aria-hidden />
+          <p className="mt-1 text-sm font-medium text-success">
+            Votre GameFolio est prêt
           </p>
           <p className="mt-1 text-xs text-content-muted">
             Le fichier {done.toUpperCase()} a été téléchargé.
           </p>
           <div className="mt-3 flex flex-wrap justify-center gap-2">
-            <Button size="sm" variant="ghost" onClick={() => void exportAs("pdf")}>
+            <Button size="sm" variant="ghost" icon={FileText} onClick={() => void exportAs("pdf")}>
               Re-télécharger PDF
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => void exportAs("png")}>
+            <Button size="sm" variant="ghost" icon={ImageIcon} onClick={() => void exportAs("png")}>
               Exporter en image
             </Button>
           </div>
@@ -81,25 +83,34 @@ export function ExportMenu() {
       ) : (
         <div className="mt-3 flex flex-wrap gap-2">
           <Button
+            icon={busy === "pdf" ? undefined : Download}
+            loading={busy === "pdf"}
             onClick={() => void exportAs("pdf")}
             disabled={busy !== null}
           >
-            {busy === "pdf" ? "Génération…" : "Télécharger PDF"}
+            Télécharger PDF
           </Button>
           <Button
-            variant="ghost"
+            variant="secondary"
+            icon={busy === "png" ? undefined : ImageIcon}
+            loading={busy === "png"}
             onClick={() => void exportAs("png")}
             disabled={busy !== null}
           >
-            {busy === "png" ? "Génération…" : "Image (PNG)"}
+            Image (PNG)
           </Button>
         </div>
       )}
 
       {error && (
-        <p className="mt-3 rounded-md border border-danger/40 bg-danger/10 p-2 text-xs text-danger">
+        <Alert
+          tone="danger"
+          title="Export impossible."
+          recovery="Réessaie dans un instant ; si le problème persiste, vérifie ta connexion."
+          className="mt-3"
+        >
           {error}
-        </p>
+        </Alert>
       )}
     </Card>
   );

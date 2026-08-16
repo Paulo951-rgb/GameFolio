@@ -89,6 +89,8 @@ export interface EditorState {
   addAchievement: (a: Achievement) => void;
   updateAchievement: (id: string, patch: Partial<Achievement>) => void;
   removeAchievement: (id: string) => void;
+  /** Force an immediate local (IndexedDB) save — toolbar "Enregistrer". */
+  saveNow: () => Promise<void>;
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -109,6 +111,19 @@ function scheduleSave(profile: GamerProfile) {
       useEditorStore.setState({ isSaving: false, lastSavedAt: Date.now() });
     });
   }, 400);
+}
+
+/** Force an immediate IndexedDB write (toolbar "Enregistrer"). Cancels any
+ *  pending debounced save and writes the current profile now, then stamps
+ *  lastSavedAt so the status flips to an honest "Sauvegardé il y a Xs". */
+function persistNow(): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
+  if (saveTimer) clearTimeout(saveTimer);
+  useEditorStore.setState({ isSaving: true });
+  const profile = useEditorStore.getState().profile;
+  return idbSet(STORAGE_KEY, profile).then(() => {
+    useEditorStore.setState({ isSaving: false, lastSavedAt: Date.now() });
+  });
 }
 
 export const useEditorStore = create<EditorState>((set, get) => ({
@@ -342,4 +357,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({ profile });
     scheduleSave(profile);
   },
+
+  saveNow: () => persistNow(),
 }));

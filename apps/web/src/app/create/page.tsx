@@ -1,7 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import {
+  Monitor,
+  Smartphone,
+  ZoomIn,
+  ZoomOut,
+  Maximize,
+  RotateCcw,
+  Save,
+  Check,
+  Loader2,
+} from "lucide-react";
 import { useEditorStore } from "@/lib/store";
+import { AppShell } from "@/components/layout/AppShell";
 import { StepWizard } from "@/components/wizard/StepWizard";
 import { LivePreviewPane } from "@/components/preview/LivePreviewPane";
 import { PersonalInfoStep } from "@/components/forms/PersonalInfoStep";
@@ -12,6 +24,8 @@ import { CustomizeStep } from "@/components/forms/CustomizeStep";
 import { PreviewStep } from "@/components/forms/PreviewStep";
 import { BadgesPreview } from "@/components/wizard/BadgesPreview";
 import { Logo } from "@/components/layout/Logo";
+import { IconButton, Button } from "@/components/ui/Button";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 
 /**
  * Wizard steps. The game count step was removed: the GameEntryStep now lets the
@@ -44,22 +58,22 @@ export default function CreatePage() {
 
   if (!hydrated) {
     return (
-      <div className="flex h-screen items-center justify-center text-content-muted">
-        Chargement…
-      </div>
+      <AppShell>
+        <div className="flex h-screen items-center justify-center text-content-muted">
+          <Loader2 size={20} className="animate-spin" aria-hidden /> Chargement de l&apos;éditeur…
+        </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-bg">
+    <AppShell>
       {/* Editor top bar */}
-      <header className="sticky top-0 z-30 border-b border-line bg-bg/80 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-line-subtle bg-bg/80 backdrop-blur">
         <div className="mx-auto flex max-w-[1500px] items-center justify-between px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
-            <Logo />
-            <span className="hidden text-sm text-content-muted sm:inline">
-              / Éditeur
-            </span>
+            <Logo href={null} />
+            <span className="hidden text-sm text-content-muted sm:inline">Éditeur</span>
           </div>
           <SaveStatus />
         </div>
@@ -67,31 +81,22 @@ export default function CreatePage() {
 
       <div className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6">
         {/* Mobile tab toggle */}
-        <div className="mb-4 flex rounded-lg border border-line lg:hidden">
-          {(["edit", "preview"] as const).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setMobileTab(tab)}
-              className={`flex-1 px-4 py-2 text-sm font-medium transition ${
-                mobileTab === tab
-                  ? "bg-accent/15 text-accent"
-                  : "text-content-muted"
-              }`}
-            >
-              {tab === "edit" ? "Éditer" : "Aperçu"}
-            </button>
-          ))}
+        <div className="mb-4 lg:hidden">
+          <SegmentedControl
+            label="Vue"
+            value={mobileTab}
+            onChange={setMobileTab}
+            options={[
+              { value: "edit", label: "Éditer" },
+              { value: "preview", label: "Aperçu" },
+            ]}
+          />
         </div>
 
         {/* 3-pane editor (desktop): left nav, center preview, right properties */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.9fr)]">
           {/* Left: steps + form */}
-          <div
-            className={`${
-              mobileTab === "edit" ? "block" : "hidden"
-            } lg:block lg:min-h-[75vh]`}
-          >
+          <div className={`${mobileTab === "edit" ? "block" : "hidden"} lg:block lg:min-h-[75vh]`}>
             <StepWizard steps={STEPS} current={currentStep} onStepChange={setStep}>
               {currentStep === 0 && <PersonalInfoStep />}
               {currentStep === 1 && <PlayerTypeStep />}
@@ -102,63 +107,52 @@ export default function CreatePage() {
             </StepWizard>
           </div>
 
-          {/* Center: live preview with zoom controls */}
-          <div
-            className={`${
-              mobileTab === "preview" ? "block" : "hidden"
-            } lg:block`}
-          >
+          {/* Center: live preview with toolbar */}
+          <div className={`${mobileTab === "preview" ? "block" : "hidden"} lg:block`}>
             <div className="lg:sticky lg:top-20">
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs font-medium uppercase tracking-wider text-content-muted">
-                  Aperçu en direct
-                </span>
+              {/* Toolbar (§9): device toggle, zoom -, %, +, reset, fullscreen, save */}
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 surface-2 px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <span className="hidden text-xs font-medium uppercase tracking-wider text-content-muted sm:inline">
+                    Aperçu
+                  </span>
+                  <SegmentedControl
+                    label="Type d&apos;appareil"
+                    size="sm"
+                    value={device}
+                    onChange={setDevice}
+                    options={[
+                      { value: "desktop", label: "Bureau", icon: Monitor },
+                      { value: "mobile", label: "Mobile", icon: Smartphone },
+                    ]}
+                  />
+                </div>
                 <div className="flex items-center gap-1">
-                  {/* Device toggle: desktop (full width) / mobile (390px column) */}
-                  <div className="mr-1 flex rounded-md border border-line p-0.5">
-                    <ZoomButton
-                      onClick={() => setDevice("desktop")}
-                      active={device === "desktop"}
-                      title="Aperçu bureau"
-                    >
-                      🖥
-                    </ZoomButton>
-                    <ZoomButton
-                      onClick={() => setDevice("mobile")}
-                      active={device === "mobile"}
-                      title="Aperçu mobile (390px)"
-                    >
-                      📱
-                    </ZoomButton>
-                  </div>
-                  <ZoomButton onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.1).toFixed(2)))} title="Dézoomer">
-                    −
-                  </ZoomButton>
-                  <span className="w-12 text-center text-xs text-content-muted">
+                  <IconButton icon={ZoomOut} label="Dézoomer" size="sm" onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.1).toFixed(2)))} />
+                  <span className="w-12 text-center text-xs tabular-nums text-content-muted">
                     {Math.round(zoom * 100)}%
                   </span>
-                  <ZoomButton onClick={() => setZoom((z) => Math.min(1.5, +(z + 0.1).toFixed(2)))} title="Zoomer">
-                    +
-                  </ZoomButton>
-                  <ZoomButton onClick={() => setZoom(1)} title="Réinitialiser le zoom">
-                    reset
-                  </ZoomButton>
-                  <ZoomButton
+                  <IconButton icon={ZoomIn} label="Zoomer" size="sm" onClick={() => setZoom((z) => Math.min(1.5, +(z + 0.1).toFixed(2)))} />
+                  <IconButton icon={RotateCcw} label="Réinitialiser le zoom" size="sm" onClick={() => setZoom(1)} />
+                  <IconButton
+                    icon={Maximize}
+                    label="Plein écran"
+                    size="sm"
                     onClick={() => {
                       const el = previewWrapRef.current;
                       if (!el) return;
                       if (document.fullscreenElement) void document.exitFullscreen();
                       else void el.requestFullscreen();
                     }}
-                    title="Plein écran"
-                  >
-                    ⛶
-                  </ZoomButton>
+                  />
+                  <div className="mx-1 h-5 w-px bg-line" aria-hidden />
+                  <SaveButton />
                 </div>
               </div>
+
               <div
                 ref={previewWrapRef}
-                className="overflow-auto rounded-lg border border-line bg-surface-2 p-4 lg:h-[78vh]"
+                className="overflow-auto rounded-lg border border-line bg-surface-2 p-4 lg:h-[76vh]"
                 style={{ transformOrigin: "top center" }}
               >
                 <div
@@ -176,45 +170,40 @@ export default function CreatePage() {
           </div>
 
           {/* Right: properties / badges / quick info */}
-          <aside
-            className={`${
-              mobileTab === "edit" ? "hidden" : "block"
-            } space-y-4 lg:block lg:sticky lg:top-20 lg:self-start`}
-          >
+          <aside className={`${mobileTab === "edit" ? "hidden" : "block"} space-y-4 lg:block lg:sticky lg:top-20 lg:self-start`}>
             <BadgesPreview />
             <StepSummary currentStep={currentStep} total={STEPS.length} onJump={setStep} />
           </aside>
         </div>
       </div>
-    </div>
+    </AppShell>
   );
 }
 
-function ZoomButton({
-  onClick,
-  children,
-  active = false,
-  title,
-}: {
-  onClick: () => void;
-  children: React.ReactNode;
-  active?: boolean;
-  title?: string;
-}) {
+/** Explicit save trigger — writes the profile to IndexedDB immediately and
+ *  reflects the honest status (never shows "Sauvegardé" before the write
+ *  resolves). The autosave status next to it keeps tracking background saves. */
+function SaveButton() {
+  const saveNow = useEditorStore((s) => s.saveNow);
+  const isSaving = useEditorStore((s) => s.isSaving);
+  const [justSaved, setJustSaved] = useState(false);
+
+  async function onClick() {
+    await saveNow();
+    setJustSaved(true);
+    setTimeout(() => setJustSaved(false), 1800);
+  }
+
   return (
-    <button
-      type="button"
+    <Button
+      size="sm"
+      variant="secondary"
+      icon={justSaved ? Check : Save}
+      loading={isSaving && !justSaved}
       onClick={onClick}
-      title={title}
-      aria-pressed={active}
-      className={`rounded-md border px-2 py-1 text-xs transition ${
-        active
-          ? "border-accent bg-accent/15 text-accent"
-          : "border-line text-content-secondary hover:border-line-strong hover:text-content-primary"
-      }`}
     >
-      {children}
-    </button>
+      <span className="hidden sm:inline">{justSaved ? "Sauvegardé" : "Enregistrer"}</span>
+    </Button>
   );
 }
 
@@ -236,10 +225,7 @@ function SaveStatus() {
   if (isSaving) {
     return (
       <span className="flex items-center gap-1.5 text-xs text-content-muted">
-        <span
-          className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent"
-          aria-hidden
-        />
+        <Loader2 size={13} className="animate-spin text-accent" aria-hidden />
         Enregistrement…
       </span>
     );
@@ -248,7 +234,7 @@ function SaveStatus() {
   if (lastSavedAt) {
     return (
       <span className="flex items-center gap-1.5 text-xs text-content-muted">
-        <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden />
+        <Check size={13} className="text-success" aria-hidden />
         Sauvegardé il y a {relativeTime(lastSavedAt)}
       </span>
     );
@@ -309,7 +295,7 @@ function StepSummary({
                       : "border-line text-content-muted"
                 }`}
               >
-                {i < currentStep ? "✓" : i + 1}
+                {i < currentStep ? <Check size={11} aria-hidden /> : i + 1}
               </span>
               {s.label}
             </button>

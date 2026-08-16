@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { Link2, Download, Image as ImageIcon, Check, Share2 } from "lucide-react";
 import type { GamerProfile } from "@gamer-cv/types";
-import { Button } from "@/components/ui";
+import { Button, IconButton } from "@/components/ui";
 
 /**
  * PublicProfileActions — client-side actions on a public profile page: copy the
@@ -18,7 +19,8 @@ export function PublicProfileActions({
   profile: GamerProfile;
 }) {
   const [copied, setCopied] = useState(false);
-  const [exportState, setExportState] = useState<"idle" | "busy" | "error">("idle");
+  const [exportFormat, setExportFormat] = useState<"pdf" | "png" | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function copyLink() {
     try {
@@ -31,7 +33,8 @@ export function PublicProfileActions({
   }
 
   async function doExport(format: "pdf" | "png") {
-    setExportState("busy");
+    setExportFormat(format);
+    setError(null);
     try {
       const res = await fetch("/api/export", {
         method: "POST",
@@ -46,26 +49,58 @@ export function PublicProfileActions({
       a.download = `gamefolio-${slug}.${format}`;
       a.click();
       URL.revokeObjectURL(url);
-      setExportState("idle");
     } catch {
-      setExportState("error");
+      setError("Export impossible. Réessaie dans un instant.");
+    } finally {
+      setExportFormat(null);
     }
   }
 
+  async function nativeShare() {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `${profile.personalInfo.gamerTag} — GameFolio`, url: window.location.href });
+      } catch {
+        /* user cancelled */
+      }
+    } else {
+      void copyLink();
+    }
+  }
+
+  const busy = exportFormat !== null;
+
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Button size="sm" variant="ghost" onClick={() => void copyLink()}>
-        {copied ? "✓ Lien copié" : "Copier le lien"}
+      <IconButton
+        icon={copied ? Check : Link2}
+        label={copied ? "Lien copié" : "Copier le lien"}
+        variant="ghost"
+        size="sm"
+        onClick={() => void copyLink()}
+        className={copied ? "!text-success" : ""}
+      />
+      <Button
+        size="sm"
+        icon={busy && exportFormat === "pdf" ? undefined : Download}
+        loading={busy && exportFormat === "pdf"}
+        onClick={() => void doExport("pdf")}
+        disabled={busy}
+      >
+        <span className="hidden sm:inline">PDF</span>
       </Button>
-      <Button size="sm" onClick={() => void doExport("pdf")} disabled={exportState === "busy"}>
-        {exportState === "busy" ? "Génération…" : "Télécharger PDF"}
+      <Button
+        size="sm"
+        variant="secondary"
+        icon={busy && exportFormat === "png" ? undefined : ImageIcon}
+        loading={busy && exportFormat === "png"}
+        onClick={() => void doExport("png")}
+        disabled={busy}
+      >
+        <span className="hidden sm:inline">PNG</span>
       </Button>
-      <Button size="sm" variant="ghost" onClick={() => void doExport("png")} disabled={exportState === "busy"}>
-        Image PNG
-      </Button>
-      {exportState === "error" && (
-        <span className="text-xs text-danger">Échec de l'export.</span>
-      )}
+      <IconButton icon={Share2} label="Partager" variant="ghost" size="sm" onClick={() => void nativeShare()} />
+      {error && <span className="text-xs text-danger">{error}</span>}
     </div>
   );
 }
