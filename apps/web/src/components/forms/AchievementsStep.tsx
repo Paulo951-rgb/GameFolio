@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { Trophy, Plus, X } from "lucide-react";
 import { useEditorStore } from "@/lib/store";
 import { getGame } from "@/lib/games";
 import type { Achievement } from "@gamer-cv/types";
-import { Field, Fieldset, TextInput, Textarea, Select, Button, Card, Badge } from "@/components/ui";
+import { Field, Fieldset, TextInput, Textarea, Select, Button, Card, Badge, IconButton, EmptyState } from "@/components/ui";
 import { gameSearchResults } from "@/lib/games";
 
 /**
@@ -116,17 +117,19 @@ export function AchievementsStep() {
           />
         </Field>
         <div className="flex justify-end">
-          <Button size="sm" onClick={commit} disabled={!draft.title?.trim()}>
-            + Ajouter l'achievement
+          <Button size="sm" icon={Plus} onClick={commit} disabled={!draft.title?.trim()}>
+            Ajouter l&apos;achievement
           </Button>
         </div>
       </Card>
 
       {/* List */}
       {achievements.length === 0 ? (
-        <p className="py-6 text-center text-sm text-content-muted">
-          Aucun achievement pour l'instant. Ajoute tes moments marquants ci-dessus.
-        </p>
+        <EmptyState
+          icon={Trophy}
+          title="Aucun achievement"
+          description="Ajoute tes moments marquants ci-dessus — chaque achievement peut porter une date et une preuve."
+        />
       ) : (
         <ul className="space-y-2">
           {achievements.map((a) => {
@@ -154,14 +157,14 @@ export function AchievementsStep() {
                       </a>
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
+                  <IconButton
+                    icon={X}
+                    label={`Supprimer ${a.title}`}
                     size="sm"
+                    variant="ghost"
+                    className="!text-danger hover:!bg-danger/10"
                     onClick={() => removeAchievement(a.id)}
-                    aria-label={`Supprimer ${a.title}`}
-                  >
-                    ✕
-                  </Button>
+                  />
                 </div>
               </li>
             );

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { Eye, EyeOff, Lock } from "lucide-react";
 import { useEditorStore } from "@/lib/store";
 import type { FieldVisibility } from "@gamer-cv/types";
-import { Field, Fieldset, TextInput, NumberInput, Textarea } from "@/components/ui";
+import { Field, Fieldset, TextInput, NumberInput, Textarea, Avatar } from "@/components/ui";
 
 const FIELDS = {
   gamerTag: { label: "Pseudo / GamerTag", type: "text", placeholder: "ShadowHunter" },
@@ -20,7 +20,6 @@ export function PersonalInfoStep() {
   const setPersonalInfo = useEditorStore((s) => s.setPersonalInfo);
   const setFieldVisibility = useEditorStore((s) => s.setFieldVisibility);
   const info = profile.personalInfo;
-  const [avatarError, setAvatarError] = useState<string | null>(null);
 
   function setField(key: keyof typeof FIELDS | "bio", value: string | number | undefined) {
     setPersonalInfo({ [key]: value } as never);
@@ -117,13 +116,11 @@ export function PersonalInfoStep() {
         />
       </Field>
 
-      <Field label={FIELDS.avatarUrl.label} htmlFor="avatarUrl" error={avatarError ?? undefined}>
+      <Field label={FIELDS.avatarUrl.label} htmlFor="avatarUrl">
         <AvatarField
           url={info.avatarUrl ?? ""}
           gamerTag={info.gamerTag}
           onChange={(v) => setField("avatarUrl", v)}
-          onLoad={() => setAvatarError(null)}
-          onError={() => setAvatarError("Impossible de charger cette image (URL invalide ou non publique).")}
         />
       </Field>
 
@@ -170,27 +167,44 @@ function VisibilityControls({
   onChange: (key: string, v: FieldVisibility) => void;
 }) {
   if (fields.length === 0) return null;
+  const options: { value: FieldVisibility; label: string; icon: typeof Eye }[] = [
+    { value: "visible", label: "Visible", icon: Eye },
+    { value: "hidden", label: "Masqué", icon: EyeOff },
+    { value: "private", label: "Privé", icon: Lock },
+  ];
   return (
     <div className="surface-2 p-3">
       <div className="mb-2 text-xs font-medium uppercase tracking-wider text-content-muted">
         Visibilité des champs
       </div>
-      <div className="space-y-2">
+      <div className="space-y-2.5">
         {fields.map((f) => (
-          <div key={f} className="flex items-center gap-3 text-sm">
+          <div key={f} className="flex flex-wrap items-center justify-between gap-2 text-sm">
             <span className="w-20 capitalize text-content-secondary">{f}</span>
-            {(["visible", "hidden", "private"] as const).map((v) => (
-              <label key={v} className="flex items-center gap-1 text-content-muted">
-                <input
-                  type="radio"
-                  name={`vis-${f}`}
-                  checked={(visibility[f] ?? "visible") === v}
-                  onChange={() => onChange(f, v)}
-                  className="accent-[var(--color-accent)]"
-                />
-                <span>{v}</span>
-              </label>
-            ))}
+            <div
+              role="radiogroup"
+              aria-label={`Visibilité de ${f}`}
+              className="segmented text-xs"
+            >
+              {options.map((opt) => {
+                const active = (visibility[f] ?? "visible") === opt.value;
+                const Icon = opt.icon;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => onChange(f, opt.value)}
+                    className="segmented-item"
+                    data-active={active || undefined}
+                  >
+                    <Icon size={13} aria-hidden />
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         ))}
       </div>
@@ -198,50 +212,22 @@ function VisibilityControls({
   );
 }
 
-/** URL input + live circular preview. Validates that the URL is well-formed
- *  and that the browser can actually fetch+decode it as an image (onError
- *  fires for 404s, non-image MIME, or CORS-blocked loads). Empty URL = no
- *  preview, no error (avatar is optional). The fallback monogram uses the
- *  gamerTag's first letter so the placeholder is personalized, not a bare "?". */
+/** URL input + live circular preview using the shared Avatar component. The
+ *  fallback monogram uses the gamerTag's first letter so the placeholder is
+ *  personalized, not a bare "?". Avatar hides broken images itself, so this
+ *  keeps a simpler URL + avatar pair (no manual onError wiring needed). */
 function AvatarField({
   url,
   gamerTag,
   onChange,
-  onLoad,
-  onError,
 }: {
   url: string;
   gamerTag: string;
   onChange: (v: string) => void;
-  onLoad: () => void;
-  onError: () => void;
 }) {
-  const trimmed = url.trim();
-  let urlValid = true;
-  if (trimmed) {
-    try {
-      new URL(trimmed);
-    } catch {
-      urlValid = false;
-    }
-  }
-  const monogram = (gamerTag?.trim()?.[0] ?? "?").toUpperCase();
   return (
     <div className="flex items-center gap-3">
-      <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-full border border-line bg-surface-2">
-        {trimmed && urlValid ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={trimmed}
-            alt=""
-            className="h-full w-full object-cover"
-            onLoad={onLoad}
-            onError={onError}
-          />
-        ) : (
-          <span className="text-lg font-semibold text-content-muted">{monogram}</span>
-        )}
-      </div>
+      <Avatar url={url} gamerTag={gamerTag} size="lg" />
       <TextInput
         id="avatarUrl"
         type="text"

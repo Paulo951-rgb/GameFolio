@@ -1,8 +1,9 @@
 "use client";
 
+import { ChevronUp, ChevronDown } from "lucide-react";
 import { useEditorStore } from "@/lib/store";
-import { templates } from "@/components/preview/templates";
-import { Field, Fieldset, Select } from "@/components/ui";
+import { TemplateGallery } from "@/components/preview/TemplateGallery";
+import { Field, Fieldset, Select, IconButton } from "@/components/ui";
 import { CV_SECTIONS, type CVSectionId, type ThemeConfig } from "@gamer-cv/types";
 
 /** All canonical sections in the user's chosen order, INCLUDING hidden ones
@@ -46,22 +47,11 @@ export function CustomizeStep() {
 
       <div>
         <span className="block text-sm font-medium text-content-secondary">Template</span>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {templates.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTemplate(t.id)}
-              aria-pressed={theme.templateId === t.id}
-              className={`rounded-lg border px-4 py-2 text-sm transition ${
-                theme.templateId === t.id
-                  ? "border-accent bg-accent/15 text-accent"
-                  : "border-line bg-surface hover:border-line-strong"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+        <p className="mt-1 text-xs text-content-muted">
+          Changer de template ne modifie que l&apos;enveloppe visuelle, jamais les données affichées.
+        </p>
+        <div className="mt-3">
+          <TemplateGallery value={theme.templateId} onSelect={setTemplate} />
         </div>
       </div>
 
@@ -200,24 +190,20 @@ function SectionOrderEditor({
               />
               <span className={isHidden ? "line-through" : ""}>{meta?.label ?? id}</span>
             </label>
-            <button
-              type="button"
-              onClick={() => move(i, -1)}
+            <IconButton
+              icon={ChevronUp}
+              label={`Monter ${meta?.label ?? id}`}
+              size="sm"
               disabled={i === 0}
-              aria-label={`Monter ${meta?.label ?? id}`}
-              className="rounded border border-line px-1.5 text-xs text-content-muted transition hover:border-line-strong hover:text-content-primary disabled:opacity-30"
-            >
-              ↑
-            </button>
-            <button
-              type="button"
-              onClick={() => move(i, 1)}
+              onClick={() => move(i, -1)}
+            />
+            <IconButton
+              icon={ChevronDown}
+              label={`Descendre ${meta?.label ?? id}`}
+              size="sm"
               disabled={i === order.length - 1}
-              aria-label={`Descendre ${meta?.label ?? id}`}
-              className="rounded border border-line px-1.5 text-xs text-content-muted transition hover:border-line-strong hover:text-content-primary disabled:opacity-30"
-            >
-              ↓
-            </button>
+              onClick={() => move(i, 1)}
+            />
           </li>
         );
       })}

@@ -1,11 +1,12 @@
 "use client";
 
+import { ChevronUp, ChevronDown, X, Gamepad2 } from "lucide-react";
 import { useEditorStore } from "@/lib/store";
 import { GameCardGrid } from "@/components/wizard/GameCardGrid";
 import { DynamicGameForm } from "./DynamicGameForm";
 import { getResolvedGame, getGame } from "@/lib/games";
 import type { GameDefinition } from "@gamer-cv/types";
-import { Field, Textarea, Button, Badge } from "@/components/ui";
+import { Field, Textarea, Badge, IconButton, EmptyState } from "@/components/ui";
 
 /**
  * GameEntryStep — modern game selection + per-game stats form.
@@ -68,32 +69,28 @@ export function GameEntryStep() {
                     ))}
                   </div>
                   <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
+                    <IconButton
+                      icon={ChevronUp}
+                      label="Monter"
                       size="sm"
-                      aria-label="Monter"
                       disabled={index === 0}
                       onClick={() => reorderGames(index, index - 1)}
-                    >
-                      ↑
-                    </Button>
-                    <Button
-                      variant="ghost"
+                    />
+                    <IconButton
+                      icon={ChevronDown}
+                      label="Descendre"
                       size="sm"
-                      aria-label="Descendre"
                       disabled={index === games.length - 1}
                       onClick={() => reorderGames(index, index + 1)}
-                    >
-                      ↓
-                    </Button>
-                    <Button
-                      variant="ghost"
+                    />
+                    <IconButton
+                      icon={X}
+                      label={`Retirer ${game?.name ?? "ce jeu"}`}
                       size="sm"
-                      aria-label={`Retirer ${game?.name ?? "ce jeu"}`}
+                      variant="ghost"
+                      className="!text-danger hover:!bg-danger/10"
                       onClick={() => removeGame(index)}
-                    >
-                      ✕
-                    </Button>
+                    />
                   </div>
                 </div>
 
@@ -128,9 +125,11 @@ export function GameEntryStep() {
       )}
 
       {games.length === 0 && (
-        <p className="rounded-md border border-dashed border-line p-6 text-center text-sm text-content-muted">
-          Aucun jeu sélectionné. Choisis-en au moins un dans la grille ci-dessus.
-        </p>
+        <EmptyState
+          icon={Gamepad2}
+          title="Aucun jeu sélectionné"
+          description="Choisis-en au moins un dans la grille ci-dessus pour remplir tes statistiques."
+        />
       )}
     </div>
   );

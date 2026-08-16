@@ -17,16 +17,17 @@
     "@gamer-cv/data": "workspace:*",
     "@gamer-cv/services": "workspace:*",
     "@gamer-cv/types": "workspace:*",
+    "@hookform/resolvers": "^3.9.0",
     "@prisma/client": "^6.19.3",
+    "idb-keyval": "^6.2.1",
+    "lucide-react": "^1.31.0",
     "next": "^14.2.5",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.52.1",
-    "@hookform/resolvers": "^3.9.0",
     "zod": "^3.23.8",
-    "zustand": "^4.5.4",
-    "idb-keyval": "^6.2.1"
+    "zustand": "^4.5.4"
   },
   "devDependencies": {
     "@types/node": "^20.14.12",

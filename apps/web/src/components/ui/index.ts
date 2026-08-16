@@ -1,6 +1,10 @@
-export { Button } from "./Button";
+export { Button, IconButton, type ButtonProps } from "./Button";
 export { Card } from "./Card";
 export { Badge, StatTile } from "./Badge";
 export { Field, Fieldset } from "./Field";
 export { Container } from "./Container";
 export { TextInput, Textarea, NumberInput, Select } from "./Input";
+export { Modal } from "./Modal";
+export { SegmentedControl, type SegmentedOption } from "./SegmentedControl";
+export { Skeleton, EmptyState, Alert } from "./Feedback";
+export { Avatar } from "./Avatar";

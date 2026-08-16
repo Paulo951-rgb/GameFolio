@@ -480,3 +480,55 @@ Post-fixes: 167 tests pass, typecheck clean, build green (18 routes). Live-
 verified in production mode: all 10 public routes 200, demo profile earns
 Ranked Peak, GET /api/share returns stored state, PDF+PNG export valid,
 OG image renders, share toggle mints slug.
+
+## What exists now (UI/UX refonte — premium gaming design system)
+
+A full A→Z visual + UX overhaul on top of the Phase 0–5 + V2 logic. NO business
+logic changed; all 167 tests, typecheck, build (18 routes) stay green. Live-
+verified in production mode: all 6 public routes 200, demo `/cv/demo` renders
+the new hero + CV, export PDF+PNG valid (%PDF / PNG sig), AI generate 200
+(mock), games search + ai/status 200.
+
+- **Design system primitives** (`apps/web/src/components/ui/`): `Button`
+  (variants primary/secondary/ghost/outline/danger/success + `icon` LucideIcon
+  + `loading` spinner that keeps size + sizes sm/md), `IconButton` (icon-only,
+  `label`→aria-label+title), `SegmentedControl` (a11y tablist for the
+  Visible/Masqué/Privé visibility selector), `Avatar` (image with broken-image
+  → monogram fallback; sizes sm/md/lg/xl), `Badge` (+`title` tooltip), `Modal`,
+  `Skeleton`, `EmptyState`, `Alert` (`Feedback.tsx`, supports `recovery` hint
+  for §19 errors). `index.ts` barrel re-exports the full set.
+- **App shell + sidebar** (`apps/web/src/components/layout/`): `AppSidebar`
+  (collapsible lateral nav, lucide icons, active highlight, mobile drawer) +
+  `AppShell` (wraps dashboard + /create). Marketing/landing + auth keep the
+  existing SiteShell (different chrome).
+- **Dashboard** (`apps/web/src/app/dashboard/page.tsx`) — greeting + avatar +
+  profile-completion % (new `lib/profileSummary.ts` →
+  `profileCompletion(profile)`, no registry param) + global stat tiles + badges
+  + shortcuts + profile cards grid.
+- **Editor** (`apps/web/src/app/create/page.tsx`) — AppShell + numbered step
+  rail (Identité→Profil→Jeux→Achievements→Design→Aperçu) + live preview toolbar
+  (Bureau/Mobile, zoom ±, reset, fullscreen, save) with lucide icons. Honest
+  `SaveStatus`. `saveNow` action added to `store.ts`.
+- **Form steps**: `PersonalInfoStep` (SegmentedControl visibility + Avatar),
+  `GameEntryStep` (lucide ChevronUp/Down/X/Gamepad2 + EmptyState + IconButton),
+  `AchievementsStep` (lucide Trophy/Plus/X + IconButton delete),
+  `CustomizeStep` (**TemplateGallery** replaces the button list; reorder via
+  IconButton ChevronUp/Down).
+- **Template gallery** (`components/preview/TemplateGallery.tsx`) — visual grid
+  of all 6 templates: CSS-only mini-preview from each template's default theme
+  (no lazy component loaded → cheap), name + style tag + French description +
+  unmistakable selected state (ring + check). `template-themes.ts` gained
+  `description` + `style` per template (single source); `templates.tsx` map
+  spreads them so `TemplateDefinition` stays satisfied.
+- **Public profile** (`/cv/[slug]`) — portfolio composition (§11), not a
+  dashboard: `PublicProfileHero` (server component: avatar + gamer tag h1 + bio
+  + platforms/langues/country via lucide + 4 global stat tiles) from
+  visibility-filtered data + `computeProfileStats`; sticky
+  `PublicProfileActions` (Copier le lien / PDF / PNG / Partager with per-button
+  loading + structured error, lucide icons); CV template on matching canvas bg
+  + QR footer + "Crée ton propre GameFolio".
+- **Accent token fix** — `globals.css` exposes `--accent`/`--accent-strong`/
+  `--accent-glow` aliases; `--color-accent` kept for back-compat.
+- Icons: `lucide-react` only (already a dep) — no new icon system, no new deps.
+
+Build commands unchanged (`pnpm -r typecheck/test/build`). All green.
