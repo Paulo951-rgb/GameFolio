@@ -139,8 +139,3 @@ export function GeneratedSections({
     </>
   );
 }
-
-/** Convenience: a CSSProperties hint for callers building heading styles. */
-export const sectionStyle = (primary: string): CSSProperties => ({
-  borderBottom: `1px solid ${primary}33`,
-});

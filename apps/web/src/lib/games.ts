@@ -3,7 +3,7 @@ import {
   moduleRegistry,
   searchGames,
 } from "@gamer-cv/data";
-import { resolveGame, resolveGameSchema } from "@gamer-cv/core";
+import { resolveGame } from "@gamer-cv/core";
 import type { FieldDescriptor, GameDefinition } from "@gamer-cv/types";
 
 export { gameRegistry, moduleRegistry, searchGames };
@@ -33,10 +33,6 @@ export function getResolvedGame(id: string) {
   const game = gameRegistry.get(id);
   if (!game) return null;
   return resolveGame(game, moduleRegistry);
-}
-
-export function getCompositeSchema(id: string) {
-  return resolveGameSchema(id, gameRegistry, moduleRegistry);
 }
 
 /**

@@ -24,7 +24,7 @@ export const demoProfile: NormalizedCVData = {
   games: [
     {
       gameId: "valorant",
-      moduleData: { hours: 800, currentRank: "Diamant 2", mainRole: "Duelist" },
+      moduleData: { hours: 800, currentRank: "Diamant 2", roles: ["Duelist"] },
       order: 0,
     },
   ],

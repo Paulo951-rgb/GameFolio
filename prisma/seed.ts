@@ -56,14 +56,17 @@ async function main() {
 
   const games = [
     {
+      // Field keys MUST match the competitive module schema (highestRank, roles)
+      // so the badges engine (which reads moduleData.highestRank) and the CV
+      // field labels (resolved from the module's FieldDescriptor) are correct.
       gameId: "valorant",
-      moduleData: { hours: 800, currentRank: "Diamant 2", peakRank: "Diamant 3", mainRole: "Duelist" },
+      moduleData: { hours: 800, currentRank: "Diamant 2", highestRank: "Diamant 3", roles: ["Duelist"] },
       freeText: "Exemple — données non réelles.",
       order: 0,
     },
     {
       gameId: "minecraft",
-      moduleData: { hours: 1200, mainMode: "Survie" },
+      moduleData: { hours: 1200, gameModes: ["Survie"] },
       freeText: "Exemple — données non réelles.",
       order: 1,
     },

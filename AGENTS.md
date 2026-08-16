@@ -432,3 +432,51 @@ analysis-driven AI generation.
 V2 tests: 114 green (types 6, core 45 incl. enrichForGeneration/systemPrompt/
 verifyFacts/serializeProfile-NaN, data 16 incl. search fuzzy/aliases, services
 5, web 42 incl. NaN formatValue). typecheck + build green.
+
+## A-to-Z audit pass (reliability/UX sweep)
+
+Baseline before fixes: 167 tests pass (types:6, core:54, data:18, services:10,
+web:79), typecheck clean across all packages. Full audit covered API routes
+(auth/register, login, logout, me, profiles, profiles/[id] incl. DELETE, share,
+export, generate, regenerate, games/search, ai/status, og/[slug]), lib files
+(auth scrypt+HMAC, rateLimit token-bucket, db Prisma singleton, profile-mapper,
+normalize, store Zustand+IndexedDB, games client resolution), packages/core
+(modules compose/merge/resolve/validate, visibility chokepoint, generation
+anti-hallucination pipeline, badges, stats, templates), services (mock/gemini/
+anthropic providers, Playwright export), and ALL UI (wizard, forms, 6 templates,
+landing, dashboard, auth, share, export, public profile). Findings + fixes:
+
+- **Seed/demo field-name mismatch (DATA BUG)**: `prisma/seed.ts` + landing
+  `demo-data.ts` stored Valorant stats under `peakRank` / `mainRole`, but the
+  competitive module schema (and the badges engine) reads `highestRank` /
+  `roles` (array). Consequence: the demo profile NEVER earned the "Ranked Peak"
+  badge, and the CV rendered wrong labels ("Peak Rank" / "Main Role" via
+  camelCase fallback instead of the curated French "Meilleur rang" / "Rôle(s)").
+  Same class of bug for Minecraft: seed used `mainMode` but the sandbox module
+  field is `gameModes` (multiselect from `game.gameModes`). Fixed all three to
+  the canonical module field keys. Re-seeding restores the demo profile in
+  place (upsert by id). Live-verified: "Ranked Peak" badge now fires on /cv/demo.
+  **Lesson**: seed/demo data MUST use the exact module field keys — the
+  badges engine + template `resolveFieldLabel` + DynamicGameForm all key off
+  the module's `FieldDescriptor.key`. A mismatch silently breaks badges and
+  labels (the value still renders via the generic `Object.entries(moduleData)`
+  path, but with wrong labels and no badge).
+- **ShareModal didn't reflect existing share state (UX BUG)**: on open the
+  modal saved the profile but never fetched the stored `isPublic`/`slug`, so an
+  already-public profile showed its toggle UNCHECKED — and re-checking it
+  minted a NEW slug, invalidating the previously-shared link. Added
+  `GET /api/share/[id]` (owner-only, returns `{isPublic, slug}`) and the modal
+  now calls it after save so the toggle + QR reflect reality.
+- **Dead code removed**: `HomeNav.tsx` (whole component, superseded by
+  `SiteHeader`), `sectionStyle` export (GeneratedSections, unused),
+  `SectionTitle` export (Card + barrel, unused), `getCompositeSchema`
+  (games.ts, unused — `getResolvedGame().compositeSchema` is the used path;
+  its `resolveGameSchema` import dropped too). `requireUser` (auth.ts) kept —
+  small documented utility for future owner-gated routes. `ProfileVersion`
+  Prisma model kept — planned version-snapshots feature, harmless unused model.
+  `columns` ThemeConfig field kept — additive future option.
+
+Post-fixes: 167 tests pass, typecheck clean, build green (18 routes). Live-
+verified in production mode: all 10 public routes 200, demo profile earns
+Ranked Peak, GET /api/share returns stored state, PDF+PNG export valid,
+OG image renders, share toggle mints slug.
